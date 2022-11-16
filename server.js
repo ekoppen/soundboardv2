@@ -23,10 +23,10 @@ const apiLimiter = rateLimit({
 const PORT = 3030;
 
 app.set("view engine", "ejs");
-app.use(express.static("public"));
+app.use(express.static("./public"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use("/api/", apiLimiter);
+//app.use("/api/", apiLimiter);
 
 const multerConf = {
   storage: multer.diskStorage({
@@ -34,11 +34,11 @@ const multerConf = {
       if (file.fieldname === "mySound") {
         // if uploading sound
         console.log("uploading sound");
-        next(null, "public/uploads/sounds/");
+        next(null, "./public/uploads/sounds/");
       } else {
         // else uploading image
         console.log("uploading image");
-        next(null, "public/uploads/images/");
+        next(null, "./public/uploads/images/");
       }
     },
     filename: function (req, file, next) {
