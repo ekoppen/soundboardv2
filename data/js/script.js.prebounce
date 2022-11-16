@@ -1,0 +1,60 @@
+﻿$(document).ready(function () {
+    // Remove no-javascript class if js is enabled
+
+    $("body.no-javascript").removeClass("no-javascript");
+    function dateFormatter(value) {
+        jQuery.format.prettyDate(value)
+    }
+
+    $("audio")
+        .removeAttr("controls")
+        .each(function (i, audioElement) {
+            var audio = $(this);
+            var that = this;
+
+
+            $(".container").append(
+                $(
+                    '<div class="sound-wrapper" id="' + audio.attr("id") + '"/>' +
+                    '<div class="rating"></div>' +
+                    '<div class="sound-counter">#: ' + audio.attr("playcount") + '</div>' +
+                    '<div class="sound-groep">' + audio.attr("class") + '</div>' +
+                    '<div class="search-tags">' + audio.attr("search_tags") + '</div>' +
+                    '<div class="date-created">' + audio.attr("date_created") + '</div>' +
+                    '<a class="' +
+                    audio.attr("class") +
+                    '" href="#" title="' +
+                    audio.attr("title") +
+                    '"><div class="sound-image">' +
+                    '<img src="img/' + audio.attr("class") + '.png"/></div>' +
+                    '<div class="sound-title">' + audio.attr("title") + '</div>' +
+                    '</a>' +
+                    audio.attr('onended', "linksAan(this.id)")
+                )
+                    .click(function () {
+                        var dataUpdate = audio.attr("id");
+                        //console.log(dataUpdate);
+                        //$.post("/update", { id: dataUpdate });
+                        //that.play();
+                        //console.log(that);
+                        if (that.paused == false) {
+                            that.pause();
+                            that.currentTime = 0;
+                            linksAan(this.id);
+                            //alert('music paused');
+                        } else {
+                            that.play();
+                            //alert('music playing');
+                        }
+
+                    })
+            );
+
+
+        });
+
+    $(".container a").click(function (event) {
+        event.preventDefault();
+    });
+
+});

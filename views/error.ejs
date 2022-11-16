@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <title>Error</title>
+    
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="styles/style.css">
+        <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
+        <script src="socket.io/socket.io.js"></script>
+        <script>
+    
+            $(function () {
+                var socket = io();
+                socket.on("users", function (userCounter) {
+                    //console.log(userCounter);
+                    $(".online-counter p").text(userCounter);
+                });
+            });
+    
+    
+        </script>
+    </head>
+    
+    <body>
+        <header>
+            <div class="topnav" id="myTopnav">
+                <a href="/" class="menu">Home</a>
+                <a href="/upload" class="">Upload</a>
+                <div class="filter-selector">
+                    <img src="img/menu/filter-variant.png" />
+                </div>
+                <p class="logged-in-user"></p>
+                <div class="online-counter">
+                    <img src="img/menu/account-multiple.png" />
+                    <p></p>
+                </div>
+            </div>
+            <div class="message-box" style="transform: translateY(-200px);">
+                <div class="title error">error</div>
+                <div class="content">Het bestand is te groot...</div>
+            </div>
+        </header>
+        <main>
+            <div class="error-container">
+    
+                    <div class="foutmelding-title">error<div/> <br>
+                    <div class="fountmelding-content">Foutmelding: <%= message %><div/><br>       
+                        <div class="backButton"><a href="#" style="color: whitesmoke;">Ga, ga je terug?</a><br><br></div>
+                        <img src="/uploads/images/pieuw.png" style="height: 200px;">
+
+    
+               </div>
+
+      
+
+            <script>
+                $('.backButton a').attr("href", "/upload");
+            </script>
+</body>
+
+</html>

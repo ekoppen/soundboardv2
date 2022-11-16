@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Soundboard upload</title>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles/style.css">
+    <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
+    <script src="socket.io/socket.io.js"></script>
+    <script>
+
+        $(function () {
+            var socket = io();
+            socket.on("users", function (userCounter) {
+                //console.log(userCounter);
+                $(".online-counter p").text(userCounter);
+            });
+        });
+        $(function(){
+  $('#myImage').change(function(){
+    var input = this;
+    var url = $(this).val();
+    console.log(url);
+    var ext = url.substring(url.lastIndexOf('.') + 1).toLowerCase();
+    if (input.files && input.files[0]&& (ext == "gif" || ext == "png" || ext == "jpeg" || ext == "jpg")) 
+     {
+        var reader = new FileReader();
+
+        reader.onload = function (e) {
+           $('.classImage').attr('src', e.target.result);
+        }
+       reader.readAsDataURL(input.files[0]);
+    }
+    else
+    {
+      $('.classImage').attr('src', '/uploads/images/pieuw.png');
+    }
+  });
+
+});
+
+    </script>
+
+</head>
+
+<body>
+    <header>
+        <div class="topnav uploadNav" id="myTopnav">
+            <a href="/" class="menu">Home</a>
+            <a href="/upload" class="active menu">Upload</a>
+            <p class="logged-in-user"></p>
+            <div class="online-counter">
+                <img src="img/menu/account-multiple.png" />
+                <p></p>
+            </div>
+        </div>
+        <div class="message-box" style="transform: translateY(-200px);">
+            <div class="title error">error</div>
+            <div class="content">Het bestand is te groot...</div>
+        </div>
+    </header>
+    <main>
+        <div class="container formContainer">
+
+            <div class="textContent">
+                <h2>Upload je mp3 bestand</h2><br>
+                <p>Let op!!! Het kan alleen een mp3 bestand zijn, niet groter dan 1MB.</p>
+                <p>Voeg tags toe om het fragment makkelijk te kunnen vinden.</p><br>
+            </div>
+            <div class="imagePreview">
+                <img src="<%= imagePreview %>" class="classImage" />
+                <p class="titlePreview" style="visibility: hidden;"></p>
+            </div>
+
+            <div class="formFields">
+                <form action="/uploadSound" enctype="multipart/form-data" method="POST">
+                    <div class="formInput">
+
+                        <input type="text" class="uploadFormText" name="name" id="name" placeholder="Beschrijving" maxlength="25" required
+                            title="max 25 karakters"><br>
+
+                            
+                        <input type="text" class="uploadFormText" name="searchTags" id="searchTags" placeholder="Zoek tags" maxlength="25"
+                            title="max 25 karakters"><br>
+                        <label for="mySound">Geluid (verplicht):</label><br>
+                        <input type="file" class ="inputSelect" name="mySound" id="mySound" accept=".mp3,.m4a" placeholder"geen" required /><br>
+                        <input type='text' name='f_du' id='f_du' size='5' /><br>
+                        <label for="myImage">Plaatje (optioneel):</label><br><br>
+                        <select id="class" name="class" class="classSelect" required>
+                            <option value="pieuw">Pieuw</option>
+                            <option value="drdis">DrDis</option>
+                            <option value="extra">Extra</option>
+                            <option value="jiskefet">Jiskefet</option>
+                            <option value="rembo">Rembo en Rembo</option>
+                        </select><br>
+                        <input type="file" class ="inputSelect" name="myImage" id="myImage" accept=".jpg,.jpeg,.png,.gif" placeholder"geen" class="myImage" /><br>
+                        <input type="submit" value="Upload" />
+                    </div>
+
+                    <div class="submitButton">
+
+                    </div>
+            </div>
+
+
+        </div>
+            
+        
+        </div>
+        <audio id='audio'></audio> 
+        <script>
+            $("select")
+                .change(function () {
+                    var optionSelected = $("option:selected", this);
+                    var valueSelected = this.value;
+                    //console.log("src", '/img/' + valueSelected + '.png');
+                    $(".imagePreview img").attr("src", '/uploads/images/' + valueSelected + '.png');
+                })
+                .change();
+            $("#name").change(function () {
+                var newText = $("#name").val();
+                if (newText) {
+                    $('.titlePreview').text(newText).css("visibility", "visible");
+                }
+                else {
+                    $('.titlePreview').text("").css("visibility", "hidden");
+                }
+            })
+
+            // Code to get duration of audio /video file before upload - from: https://coursesweb.net/ 
+            function format(time) {   
+                // Hours, minutes and seconds
+                var hrs = ~~(time / 3600);
+                var mins = ~~((time % 3600) / 60);
+                var secs = ~~time % 60;
+
+                // Output like "1:01" or "4:03:59" or "123:03:59"
+                var ret = "";
+                if (hrs > 0) {
+                    ret += "" + hrs + ":" + (mins < 10 ? "0" : "");
+                }
+                ret += "" + mins + ":" + (secs < 10 ? "0" : "");
+                ret += "" + secs;
+                return ret;
+            }
+            //register canplaythrough event to #audio element to can get duration 
+            var f_duration =0; //store duration 
+            document.getElementById('audio').addEventListener('canplaythrough', function(e){ 
+            //add duration in the input field #f_du 
+            f_duration = format(e.currentTarget.duration); 
+            document.getElementById('f_du').value = f_duration; 
+            URL.revokeObjectURL(obUrl); 
+            }); 
+            
+            //when select a file, create an ObjectURL with the file and add it in the #audio element 
+            var obUrl; 
+            document.getElementById('mySound').addEventListener('change', function(e){ 
+            var file = e.currentTarget.files[0]; 
+            //check file extension for audio/video type 
+            if(file.name.match(/\.(avi|mp3|mp4|mpeg|ogg)$/i)){ 
+            obUrl = URL.createObjectURL(file); 
+            document.getElementById('audio').setAttribute('src', obUrl); 
+            } 
+            });
+        </script>
+</body>
+
+</html>
