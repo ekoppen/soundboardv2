@@ -548,7 +548,20 @@ span {
     left:0px;
   }
   .quicksearch {
-    width: 135px;
+    width: 100px;
+  }
+
+  .online-counter {
+    position: absolute;
+    right: 0px;
+  }
+  
+  .online-counter p {
+    font-size: 1.0em;
+    position: absolute;
+    right: 40px;
+    top: 8px;
+    color: var(--secondary-color);
   }
 }
 
