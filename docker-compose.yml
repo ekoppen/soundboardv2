@@ -5,6 +5,6 @@ services:
     ports:
      - "3039:3030"
     volumes:
-      - /home/eelko/Documents/dockers/soundboardv2/data:/usr/src/app/public
+      - /home/eelko/Documents/dockers/soundboardv2/public:/usr/src/app/public
     container_name: soundboardv2
 

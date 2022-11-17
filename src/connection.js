@@ -1,6 +1,6 @@
 // connection.js
 const mongoose = require("mongoose");
-const connection = "mongodb://localhost:27017/soundboard";
+const connection = "mongodb://10.10.100.10:27017/soundboard";
 const connectDb = () => {
   return mongoose.connect(connection, {
     useNewUrlParser: true,
