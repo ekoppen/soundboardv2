@@ -23,6 +23,9 @@ html {
   --sound-wrapper-height: 100px;
   --sound-wrapper-padding: 4px;
   --scaling: 0.9;
+  --primary-color: #993333;
+  --secondary-color: #ffcc00;
+  --tertiary-color: #cc6633;
 }
 
 body {
@@ -46,12 +49,11 @@ body {
   position: fixed;
   top: 0;
   width: 100%;
-  z-index: 400;
   opacity: 0.98;
   height: 50px;
-  min-width: 500px;
+  min-width: 430px;
   transition: transform 0.4s;
-  z-index: 1000;
+  z-index: 800;
   overflow: hidden;
 }
 
@@ -72,13 +74,14 @@ body {
 }
 
 .topnav a.active {
-  background-color: #3498db;
+ /* background-color: #3498db; */
+  background-color: var(--primary-color);
   color: white;
 }
 
 .message-box {
   margin: auto;
-  position: absolute;
+  position: fixed;
   left: 50%;
   transform: translateX(-50%);
   top: -110px;
@@ -137,7 +140,6 @@ body {
   font-size: 1.4em;
   position: absolute;
   right: 10px;
-  color:#2ecc71;
 }
 
 .online-counter p {
@@ -145,7 +147,7 @@ body {
   position: absolute;
   right: 0px;
   top: 8px;
-  color:#2ecc71;
+  color: var(--secondary-color);
 }
 
 .online-counter .kat img {
@@ -259,13 +261,16 @@ body {
   position: absolute;
   top: 190px;
   height: 270px;
-  width: 350px;
+  width: 450px;
 }
 
 .formInput {
   position: absolute;
-  margin-left: 10px;
-  width: 90%;
+  width: 100%;
+}
+
+.uploadFormText {
+  width: 350px;
 }
 
 .imagePreview img {
@@ -281,9 +286,11 @@ body {
 
 #f_du {
   position: absolute;
-  margin-top: -52px;
+  top: 130px;
   width: 50px;
-  right: -110px;
+  left: 370px;
+  color: whitesmoke;
+  font-size: 1.4em;
 }
 input[type="text"],
 select,
@@ -335,7 +342,7 @@ input[type="submit"] {
   text-rendering: optimizeLegibility;
   font-size: 18px;
   position: absolute;
-  background-color: #3498db;
+  background-color: var(--primary-color);
   color: white;
   padding: 12px 10px;
   border: none;
@@ -348,7 +355,7 @@ input[type="submit"] {
   transform: translateX(-50%);
 }
 input[type="file"] {
-  background-color: #3498db;
+  background-color: var(--tertiary-color);
   color: white;
   padding: 12px 10px;
   border: none;
@@ -365,11 +372,15 @@ input[type="file"] {
     margin-top: 85px;
     color: #ddd;
     right: 20px;
+
   }
 
   .quicksearch {
+    position: fixed;
     width: 300px;
-  
+    z-index: 900;
+    left: 135px;
+    top: 8px;
   }
   input[type="text"] .quicksearch {
     position: absolute;
@@ -425,11 +436,6 @@ span {
 }
 
 
-
-
-
-
-
 .rating {
   position: absolute;
   top: 10px;
@@ -466,13 +472,13 @@ span {
 }
 
 .button:hover {
-  background-color: #8cf;
+  background-color: var(--primary-color);
   color: #222;
 }
 
 .button:active,
 .button.is-checked {
-  background-color: #3498db;
+  background-color: var(--primary-color);
 }
 
 .button.is-checked {
@@ -520,16 +526,31 @@ span {
   width: 100%;
   height: auto;
   position:fixed;
-  bottom:-50%;
+  bottom:-10%;
   left:0px;
 }
 
 
 .container-grid {
-  position: absolute;
-  padding-left: 70px;
+  margin: 0 auto;
 }
 
+@media only screen and (max-width: 580px) {
+  .main {
+    background-color: rgba(51, 51, 51, 0.2);
+  
+  }
+  .bgboem img {
+    width: 100%;
+    height: auto;
+    position:fixed;
+    top: -10%;
+    left:0px;
+  }
+  .quicksearch {
+    width: 135px;
+  }
+}
 
 .card {
   position: absolute;
@@ -604,7 +625,7 @@ span {
 .sound-count {
   position: absolute;
   display: block;
-  color: #2ecc71;
+  color: var(--secondary-color);
   top: 60px;
   right: 10px;
   z-index: 200;
@@ -617,7 +638,7 @@ span {
   display: block;
   position: absolute;
   top: 40px;
-  color: silver;
+  color: var(--tertiary-color);
   text-align: right;
   font-size: 0.8rem;
   z-index: 200;
@@ -676,7 +697,7 @@ span {
 
 .sound-tags {
   position: absolute;
-  color:rgba(46, 204, 113, 0.8);
+  color: var(--tertiary-color);
   font-size: 0.8rem;
   width: 150px;
   z-index: 380;

@@ -102,14 +102,13 @@ app.post(
   async function (req, res) {
     //check for file
     const soundName = req.files["mySound"][0].filename;
-
+    const linkToFile = soundName.toString().split(" ").join("");
     console.log(req.files["mySound"][0]);
-    //const imageName = req.files["myImage"][0].filename;
-
+    
     var imageName = function () {
       if (!req.files["myImage"]) {
         //console.log("geen image geupload");
-        return req.body.class + ".png";
+        return (soundImage = "pieuw.png");
       } else {
         //console.log("wel een image geupload");
         return (imageName = req.files["myImage"][0].filename);
@@ -117,12 +116,10 @@ app.post(
     };
     try {
       //save to mongoDB
-      const linkToFile = soundName.toString().split(" ").join("");
-
+      
       const sound = new Sound({
         //class: req.body.class.toString(),
         title: req.body.name.toString(),
-        class: req.body.class.toString(),
         search_tags: req.body.searchTags.toString(),
         audio_file: linkToFile,
         sound_length: req.body.f_du,
@@ -132,16 +129,18 @@ app.post(
       });
 
       sound.save().then(() =>
-        io.emit("message", {
-          sound: sound,
-          type: "info",
-          bericht: "Nieuw item toegevoegd: ",
+      io.emit("message", {
+        boodschap: message,
+            type: type,
+            bericht: message,
+            duration: duration
         })
+        
       );
-
+      res.redirect("/");
       //res.send("New Sound created \n");
 
-      res.redirect("/");
+      
     } catch (err) {
       console.log(err);
     }
@@ -152,7 +151,7 @@ app.get("/", async (req, res) => {
   //var sounditems = await Sound.find().sort("-play_count");
   var sounditems = await Sound.find({'active' : 1}).sort("-play_count");
   //console.log(sounditems);
-  res.render("start-temp", {
+  res.render("start", {
     sounditems: sounditems,
   });
 });
@@ -161,7 +160,7 @@ app.get('/:id', async function(req, res) {
   var id = req.params.id;
   
   try { var sounditems = await Sound.find({'_id' : id});
-        res.render("start-temp", {
+        res.render("start", {
         sounditems: sounditems,
   });
   }

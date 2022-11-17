@@ -9,235 +9,181 @@
     <meta name="viewport" content="width=device-width, 
     minimum-scale=1.0, maximum-scale=1.0">
     <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
-    <script src="js/isotope.pkgd.min.js"></script>
+    <script src="../js/isotope.pkgd.js"></script>
 
     <script src="socket.io/socket.io.js"></script>
-
+    <script src="https://kit.fontawesome.com/4191eec88b.js" crossorigin="anonymous"></script>
     <title>Soundboard</title>
-    <style type="text/css"> 
- 
-</style>
 </head>
 
-<script>
-    
-
-    $(function () {
-        var socket = io();
-        socket.on("inhoud", function (data) {
-            //console.log(data.counter);
-            //$("ul#doc li#" + data.id + " .playCount").text("#: " + data.counter).animate({ "font-size": "1.5rem" }, 100).animate({ "font-size": "1rem" }, 200);
-            $(".sound-wrapper#" + data.id + " .sound-counter").text("#: " + data.counter).animate({ "font-size": "1.1rem" }, 100).animate({ "font-size": "0.7rem" }, 200);
-        });
-        socket.on("users", function (userCounter) {
-            //console.log(userCounter);
-            $(".online-counter p").text(userCounter);
-        });
-        socket.on("message", function (data) {
-            console.log(data);
-            $('.message-box #messageTitle').removeClass('error' || alert);
-            $('.message-box #messageTitle').attr('class', data.type).text(data.type);
-            $('.message-box #messageContent').text(data.bericht + data.sound.title).append('<a href="#" onclick="location.reload();"><img style="height: 50px; width: auto; border-radius: 4px; position: absolute; top: 5px; right: 5px;"  src="./uploads/images' + data.sound.soundImage + '" /></a>');
-            
-            $('.message-box').animate({
-                top: '0px'
-            }).delay(8000).animate({
-                top: '-100%'
-            });
-        })
-
-    });
-    $('')
-    function linksAan(dataIn, dataDuration) {
-        //console.log(dataIn);
-        //console.log(dataDuration);
-        var audioId = dataIn.slice(0, 35);
-        //console.log('id is: ' + audioId);
-        $.post("/update", { "id": audioId });
-        $(".wrapper#" + audioId + " .progress-bar").delay(2000).css(
-              "left",
-              "-350px"
-            );
-            
-      
-        $(".wrapper#" + audioId + " .duration-counter").css("visibility", "hidden");
-        $(".wrapper#" + audioId + " .duration").css("visibility","visible");
-                
-    }
-
-
-</script>
-
-
 <body>
-    <header>
+    <nav>
         <div class="topnav" id="myTopnav">
             <a href="/" class="active menu">Home</a>
             <a href="/upload" class="menu">Upload</a>
-
-            <p class="logged-in-user"></p>
+            <div class="logged-in-user"></div>
             <div class="online-counter">
-                <img src="img/menu/account-multiple.png" />
+                <div class="kat"><img src="/img/kat-1.png" /></div>
+                <div class="oog-links"><img src="/img/oog.png"></div>
+                <div class="oog-rechts"><img src="/img/oog.png"></div>
                 <p></p>
             </div>
             <div class="selector-menu">
                 <div id="filters" class="button-group filters-button-group sort">
-                    <button class="button is-checked" data-filter="*"
-                        onclick="location.reload();">Alle tonen</button>
-                    <button class="button" data-filter="nieuw">Nieuw</button>
-                    <button class="button" data-filter="toppers">
-                        Toppers
-                    </button>
-                    <input type="text" class="quicksearch" placeholder="zoek op naam of tag" /></input>
                 </div>
             </div>
         </div>
-        <div class="message-box" style="top: -100%;">
-            <div id="messageTitle" class="title">Title</div>
-            <div id="messageContent" class="content">Bericht...</div>
+    </nav>
+
+
+    <div class="main">
+        <div class="bgboem"><img src="/img/boem.png" alt=""></div>
+        <input type="text" class="quicksearch" placeholder="zoek op naam of tag" /></input>
+
+        <div class="message-box">
+            <div class="message-title"></div>
+            <div class="message-content"></div>
+        </div>
+        <div class="container-grid">
         </div>
 
-    </header>
-    <main>
-        <div class="container">
-
-            <% sounditems.forEach(function(sounditem) { %>
-            <section>
-                <audio class="<%= sounditem.class %>" 
-                    title="<%= sounditem.title %>"
-                    playcount="<%= sounditem.play_count %>" 
-                    id="<%= sounditem._id %>"
-                    search_tags="<%= sounditem.search_tags %>" 
-                    date_created="<%= sounditem.created_at %>" 
-                    sound_length="<%= sounditem.sound_length %>" 
-                    soundImage="<%= sounditem.soundImage %>" >
-
-                    <source src="/uploads/sounds/<%= sounditem.audio_file %>" />
-                </audio>
-            </section>
-            <% }); %>
-
-        </div>
-
-    </main>
     </div>
     </div>
 
+    <% sounditems.forEach(function(sounditem) { %>
+        <section>
+            <audio class="<%= sounditem.class %>" 
+                title="<%= sounditem.title %>"
+                play_count="<%= sounditem.play_count %>" 
+                id="<%= sounditem._id %>"
+                search_tags="<%= sounditem.search_tags %>" 
+                date_created="<%= sounditem.created_at %>" 
+                sound_length="<%= sounditem.sound_length %>" 
+                soundImage="<%= sounditem.soundImage %>" >
 
-    <script src="js/script.js "></script>
+                <source src="/uploads/sounds/<%= sounditem.audio_file %>" />
+            </audio>
+        </section>
+        <% }); %>
+
 
     
-    <script>
-        $(document).ready(function () {
-
-            
-            var buttonFilters = {};
-            var buttonFilter;
-            // quick search regex
-            var qsRegex;
-
-            // init Isotope
-            var $grid = $('.container').isotope({
-                itemSelector: '.sound-wrapper',
-                layoutMode: 'fitRows',
-                filter: function () {
-                    var $this = $(this);
-                    var searchResult = qsRegex ? $this.text().match(qsRegex) : true;
-                    var buttonResult = buttonFilter ? $this.is(buttonFilter) : true;
-                    return searchResult && buttonResult;
-                }
-            });
-
-            // filter functions
-            var filterFns = {
-                // show if number is greater than 50
-                toppers: function () {
-                    $('.quicksearch').hide();
-                    var number = $(this).find(".sound-counter").text().split(' ')[1];
-                    //console.log(number);
-                    //functie maken die er 6 terug geeft
-                    return parseInt(number, 10) > 30;
-                },
-                nieuw: function () {
-                    $('.quicksearch').hide();
-                    var classText = $(this).find(".date-created").text();
-                    var dateCreated = Date.parse(classText);
-                    var dateNow = Date.now();
-                    var interval = dateNow - dateCreated
-
-                    var minutes = 1000 * 60;
-                    var hours = minutes * 60;
-                    var days = hours * 24;
-                    var years = days * 365;
-
-                    return Math.round(interval / days) < 10;
-
-                }
-            };
 
 
-            $(".filters-button-group").on("click", "button", function () {
-                var filterValue = $(this).attr("data-filter");
-                // use filterFn if matches value
-                filterValue = filterFns[filterValue] || filterValue;
-                var value = (".date-created");
-                $grid.isotope({
-                    filter: filterValue,
-                    sortBy: value
+        <script>
+    
+            $(function () {
+                var socket = io();
+                socket.on("inhoud", function (data) {
+                    //console.log(data.counter);
+                    //$("ul#doc li#" + data.id + " .playCount").text("#: " + data.counter).animate({ "font-size": "1.5rem" }, 100).animate({ "font-size": "1rem" }, 200);
+                    $(".card#" + data.id + " .sound-count").text("#: " + data.counter).animate({ "font-size": "2.0rem" }, 100).animate({ "font-size": "0.9rem" }, 200);
                 });
-
-            });
-
-            // use value of search field to filter
-            var $quicksearch = $('.quicksearch').keyup(debounce(function () {
-                qsRegex = new RegExp($quicksearch.val(), 'gi');
-                $grid.isotope();
-            }));
-
-
-            // change is-checked class on buttons
-            $('.button-group').each(function (i, buttonGroup) {
-                var $buttonGroup = $(buttonGroup);
-                $buttonGroup.on('click', 'button', function () {
-                    $buttonGroup.find('.is-checked').removeClass('is-checked');
-                    $(this).addClass('is-checked');
+                socket.on("users", function (userCounter) {
+                    //console.log(userCounter);
+                    $(".online-counter p").text(userCounter);
                 });
+                socket.on("message", function (data) {
+                    //console.log(data);
+                    $('.message-title').text(
+                        data.type )
+                    $('.message-content').text(
+                        data.bericht )
+
+                    $('.message-box').animate({
+                        top: '0px'
+                    }).delay(data.duration).animate({
+                        top: '-110px'
+                    });
+                })
+        
             });
 
-            // flatten object by concatting values
-            function concatValues(obj) {
-                var value = '';
-                for (var prop in obj) {
-                    value += obj[prop];
-                }
-                return value;
+        
+            $('')
+            function linksAan(dataIn, dataDuration) {
+                $.post("/update", { "id": dataIn });
+                 $(".card#" + dataIn + " .progress").delay(2000).css(
+                       "left",
+                       "-350px");                  
+                    $(".card#" + dataIn + " .duration-counter").css("visibility", "hidden");
+                    $(".card#" + dataIn + " .sound-timer").css("visibility","visible");
+                    $(".oog-links").animate({right: '83px'});
+                    $(".oog-rechts").animate({right: '68px'});
             }
+        
 
+        </script>
+        <script src="js/script.js "></script>
 
-            // debounce so filtering doesn't happen every millisecond
-            function debounce(fn, threshold) {
-                var timeout;
-                threshold = threshold || 100;
-                return function debounced() {
-                    clearTimeout(timeout);
-                    var args = arguments;
-                    var _this = this;
-                    function delayed() {
-                        fn.apply(_this, args);
+    
+        <script>
+            $(document).ready(function () {
+                
+                var buttonFilters = {};
+                var buttonFilter;
+                // quick search regex
+                var qsRegex;
+    
+                // init Isotope
+                var $grid = $('.container-grid').isotope({
+                    itemSelector: '.card',
+                    filter: function () {
+                        var $this = $(this);
+                        var searchResult = qsRegex ? $this.text().match(qsRegex) : true;
+                        var buttonResult = buttonFilter ? $this.is(buttonFilter) : true;
+                        return searchResult && buttonResult;
+                    },
+                    masonry: {
+                        fitWidth: true
+                        }
+                });
+
+    
+    
+                
+    
+                // use value of search field to filter
+                var $quicksearch = $('.quicksearch').keyup(debounce(function () {
+                    qsRegex = new RegExp($quicksearch.val(), 'gi');
+                    $grid.isotope();
+                }));
+    
+    
+
+    
+                // flatten object by concatting values
+                function concatValues(obj) {
+                    var value = '';
+                    for (var prop in obj) {
+                        value += obj[prop];
                     }
-                    timeout = setTimeout(delayed, threshold);
-                };
-            }
-
-
-
-        })
-
-
-    </script>
+                    return value;
+                }
     
-   
+    
+                // debounce so filtering doesn't happen every millisecond
+                function debounce(fn, threshold) {
+                    var timeout;
+                    threshold = threshold || 100;
+                    return function debounced() {
+                        clearTimeout(timeout);
+                        var args = arguments;
+                        var _this = this;
+                        function delayed() {
+                            fn.apply(_this, args);
+                        }
+                        timeout = setTimeout(delayed, threshold);
+                    };
+                }
+    
+            
+    
+            })
+            
 
-</body>
-
-</html>
+        </script>
+    <input type="text" class="hibbem"></input>    
+       
+    </body>
+    

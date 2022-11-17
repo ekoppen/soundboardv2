@@ -5,62 +5,55 @@
   }
 
   $("audio")
+    .attr("onended", "linksAan(this.id)")
     .removeAttr("controls")
     .each(function (i, audioElement) {
       var audio = $(this);
       var that = this;
-
-      $(".container").append(
+    
+      $(".container-grid").append(
         $(
-          '<div class="wrapper">' +
-
-          '<div class="sound-wrapper" id="' +
+         '<div class="card" id="' +
             audio.attr("id") +
-            '<div class="sound-counter">#: ' +
             '">' +
-            '<div class="rating"></div>' +
-            '<div class="progress-bar"></div>' +
-            audio.attr("sound_length") +
-            "</div>" +
-            '<div class="duration"></div>' +
-            '<div class="duration-counter"></div>' +
-            '<div class="bottom-bar"></div>' +
-            '<div><h2><a id="share-link" href="#" onClick=console.log("' + 
-            this.id +
-            '")>share</a></h2></div>' +
+              '<div class="top-bar">'  +
+                '<div class="progress"></div>' +
+              '</div>' +
+              '<div class="middle-bar">' +
+                '<div class="sound-image">' +
+                  '<img src="/uploads/images/' +
+                    audio.attr("soundImage") +
+                '"></div>' +
+                '<div class="sound-title">' +
+                  audio.attr("title") +
+                '</div>' +
+                '</div>' +
+                '<div class="sound-timer">' +
+                  audio.attr("sound_length") +
+                  '</div>' +
+                  '<div class="duration-counter"></div>' +
+                  '<div class="sound-count">#: '
+                    +
+                  audio.attr("play_count") +
+                  '</div>' +
+                
+                '<div class="sound-share">' +
+                  '<div id="share-link")><i class="fa-regular fa-share-from-square"></i></div>' +
 
-            audio.attr("playcount") +
-            "</div>" +
-            '<div class="sound-groep">' +
-            audio.attr("class") +
-            "</div>" +
-            '<div class="search-tags">' +
-            audio.attr("search_tags") +
-            "</div>" +
-            '<div class="date-created">' +
-            audio.attr("date_created") +
-            "</div>" +
-            '<a class="' +
-            audio.attr("class") +
-            '" href="#" title="' +
-            audio.attr("title") +
-            '"><div class="sound-image">' +
-            '<img src="/uploads/images/' +
-            audio.attr("soundImage") +
-            '"/></div>' +
-            '<div class="sound-title"><span>' +
-            audio.attr("title") +
-            '"</span></div>' +
-            '"</a>' +
-            audio.attr("onended", "linksAan(this.id)") +
-            '</div>'
+
+              '</div>' +
+              '<div class="bottom-bar">' +
+                '<div class="sound-tags">' +
+                  audio.attr("search_tags") +
+                '</div>' +
+              '</div>' +
+          '</div>' +
+          
+        '</div>' 
 
         ).click(function () {
-          var dataUpdate = audio.attr("id");
-          //console.log(dataUpdate);
-          //$.post("/update", { id: dataUpdate });
-          //that.play();
-          //console.log(that);
+          //console.log("test")
+          //var dataUpdate = audio.attr("id");
           if (that.paused == false) {
             var duration = that.duration;
             that.pause();
@@ -71,31 +64,36 @@
             that.play();
             //alert('music playing');
             var duration = that.duration;
+            //console.log(duration);
             var music = that;
+            $(".oog-links").animate({right: '+=4px'});
+            $(".oog-rechts").animate({right: '+=6px'});
             music.addEventListener("timeupdate", timeUpdate, false);
             function timeUpdate() {
               var playPercent = Math.round(100 * (that.currentTime / duration));
               //console.log(playPercent + "%");
-              $(".sound-wrapper#" + this.id + " .progress-bar").css(
+              $(".card#" + this.id + " .progress").css(
                 /* "opacity",
                 "0.0" + playPercent */
                 "left",
                 -350 + playPercent * 3.5
               );
-              $(".sound-wrapper#" + this.id + " .duration").css(
+              $(".card#" + this.id + " .sound-timer").css(
                 "visibility",
                 "hidden"
               );
-              $(".sound-wrapper#" + this.id + " .duration-counter")
+              $(".card#" + this.id + " .duration-counter")
                 .css("visibility", "visible")
                 .text(
                   format(duration - (duration / 100) * playPercent)
                   //format((duration / 100) * playPercent)
                 );
+                
             }
+
           }
         })
-      );
+      ); 
     });
 
   function format(time) {
@@ -113,14 +111,30 @@
     ret += "" + secs;
     return ret;
   }
+
+  $(".sound-share").click(function(e){
+    var idnummer = ($(this).parent()[0]).id;
+    var linkto = "https://soundboard.pieuw.nl/" + idnummer;
+
+        function copyToClipboard(e) {
+          var $temp = $('<input class="hibbem">');
+          $("body").append($temp);
+          $($(".hibbem")).val(linkto).select();
+          document.execCommand("copy");
+          $(".hibbem").remove();
+          $.post("/message", { "type": "info", "bericht": "Link is gekopieerd", "link": linkto, "duration": 3000 });
+        }
+
+    copyToClipboard(linkto);
+    e.stopPropagation()
   
-  $("#share-link").click(function(e){
-    e.stopPropagation() 
   });
 
-  $(".container a").click(function (event) {
+
+  $(".container-grid a").click(function (event) {
      event.preventDefault();
    });
 });
+
 
 
