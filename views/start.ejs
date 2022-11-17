@@ -49,7 +49,7 @@
 
     </div>
     </div>
-
+    
     <% sounditems.forEach(function(sounditem) { %>
         <section>
             <audio class="<%= sounditem.class %>" 
@@ -177,7 +177,17 @@
                     };
                 }
     
-            
+                    function checkResponses(){
+                        var sections = $("section").length
+                        if  (sections >= 2) {
+                            console.log("meerdere")
+                        }
+                        else {
+                        $("audio").get(0).play()
+                        console.log("enkel")
+                        }
+                    }
+                    checkResponses()
     
             })
             
