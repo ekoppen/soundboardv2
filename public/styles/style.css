@@ -548,7 +548,7 @@ span {
     left:0px;
   }
   .quicksearch {
-    width: 100px;
+    width: 120px;
   }
 
   .online-counter {
@@ -559,7 +559,7 @@ span {
   .online-counter p {
     font-size: 1.0em;
     position: absolute;
-    right: 40px;
+    right: 120px;
     top: 8px;
     color: var(--secondary-color);
   }
