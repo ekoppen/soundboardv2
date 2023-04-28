@@ -1,6 +1,8 @@
 // connection.js
+require('dotenv').config();
+
 const mongoose = require("mongoose");
-const connection = "mongodb://10.10.100.10:27017/soundboard";
+const connection = process.env.MONGO_URI;
 const connectDb = () => {
   return mongoose.connect(connection, {
     useNewUrlParser: true,

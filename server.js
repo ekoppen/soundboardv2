@@ -1,4 +1,6 @@
 // server.js
+require('dotenv').config();
+
 const Sound = require("./src/sound-model");
 const express = require("express");
 const app = express();
