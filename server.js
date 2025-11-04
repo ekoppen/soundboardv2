@@ -1,4 +1,7 @@
 // server.js
+// Load environment variables first
+require('dotenv').config();
+
 const Sound = require("./src/sound-model");
 const express = require("express");
 const app = express();
@@ -11,22 +14,29 @@ const multer = require("multer");
 
 const connectDb = require("./src/connection");
 const mongoose = require("mongoose");
-mongoose.set("useFindAndModify", false);
+// Note: useFindAndModify is no longer needed in Mongoose 8+
 
 const rateLimit = require("express-rate-limit");
 
+// Configure rate limiter with environment variables
 const apiLimiter = rateLimit({
-  windowMs: 1 * 30 * 1000, // 30 seconds
-  max: 10,
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 30000, // 30 seconds default
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 10, // 10 requests default
+  message: "Te veel verzoeken van dit IP adres, probeer het later opnieuw."
 });
 
-const PORT = 3030;
+// Get PORT from environment variables
+const PORT = process.env.PORT || 3030;
 
 app.set("view engine", "ejs");
 app.use(express.static("./public"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-//app.use("/api/", apiLimiter);
+
+// Apply rate limiting to sensitive endpoints
+app.use("/uploadSound", apiLimiter);
+app.use("/update", apiLimiter);
+app.use("/message", apiLimiter);
 
 const multerConf = {
   storage: multer.diskStorage({
@@ -64,7 +74,9 @@ const multerConf = {
     if (!file) {
       next();
     }
-    const image = file.mimetype === "image/jpg" || "image/jpeg" || "image/png";
+    const image = file.mimetype === "image/jpg" ||
+                  file.mimetype === "image/jpeg" ||
+                  file.mimetype === "image/png";
     const audio = file.mimetype.startsWith("audio/");
     if (audio || image) {
       next(null, true);
@@ -128,15 +140,16 @@ app.post(
         soundImage: imageName(),
       });
 
-      sound.save().then(() =>
+      await sound.save();
+
+      // Notify all clients that a new sound was added
       io.emit("message", {
-        boodschap: message,
-            type: type,
-            bericht: message,
-            duration: duration
-        })
-        
-      );
+        boodschap: "Nieuw geluid toegevoegd!",
+        type: "success",
+        bericht: "Nieuw geluid toegevoegd!",
+        duration: 3000
+      });
+
       res.redirect("/");
       //res.send("New Sound created \n");
 
