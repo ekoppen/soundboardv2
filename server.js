@@ -88,12 +88,12 @@ const multerConf = {
 
 function format(time) {
   // Hours, minutes and seconds
-  var hrs = ~~(time / 3600);
-  var mins = ~~((time % 3600) / 60);
-  var secs = ~~time % 60;
+  const hrs = ~~(time / 3600);
+  const mins = ~~((time % 3600) / 60);
+  const secs = ~~time % 60;
 
   // Output like "1:01" or "4:03:59" or "123:03:59"
-  var ret = "";
+  let ret = "";
   if (hrs > 0) {
     ret += "" + hrs + ":" + (mins < 10 ? "0" : "");
   }
@@ -111,36 +111,47 @@ app.get("/upload", (req, res) => {
 app.post(
   "/uploadSound",
   multer(multerConf).fields([{ name: "mySound" }, { name: "myImage" }]),
-  async function (req, res) {
-    //check for file
-    const soundName = req.files["mySound"][0].filename;
-    const linkToFile = soundName.toString().split(" ").join("");
-    console.log(req.files["mySound"][0]);
-    
-    var imageName = function () {
-      if (!req.files["myImage"]) {
-        //console.log("geen image geupload");
-        return (soundImage = "pieuw.png");
-      } else {
-        //console.log("wel een image geupload");
-        return (imageName = req.files["myImage"][0].filename);
-      }
-    };
+  async function (req, res, next) {
     try {
-      //save to mongoDB
-      
+      // Validate that sound file was uploaded
+      if (!req.files || !req.files["mySound"] || !req.files["mySound"][0]) {
+        return res.status(400).render("error", {
+          message: "Geen geluidsbestand geüpload. Upload een geluidsbestand."
+        });
+      }
+
+      // Validate required fields
+      if (!req.body.name || !req.body.searchTags) {
+        return res.status(400).render("error", {
+          message: "Titel en zoektags zijn verplicht."
+        });
+      }
+
+      const soundName = req.files["mySound"][0].filename;
+      const linkToFile = soundName.toString().split(" ").join("");
+      console.log("Uploading sound file:", req.files["mySound"][0].filename);
+
+      // Determine image filename
+      const getImageName = () => {
+        if (!req.files["myImage"] || !req.files["myImage"][0]) {
+          return "pieuw.png";
+        }
+        return req.files["myImage"][0].filename;
+      };
+
+      // Save to MongoDB
       const sound = new Sound({
-        //class: req.body.class.toString(),
         title: req.body.name.toString(),
         search_tags: req.body.searchTags.toString(),
         audio_file: linkToFile,
-        sound_length: req.body.f_du,
+        sound_length: req.body.f_du || "0:00",
         play_count: 0,
         active: 1,
-        soundImage: imageName(),
+        soundImage: getImageName(),
       });
 
       await sound.save();
+      console.log("Sound saved successfully:", sound.title);
 
       // Notify all clients that a new sound was added
       io.emit("message", {
@@ -151,78 +162,98 @@ app.post(
       });
 
       res.redirect("/");
-      //res.send("New Sound created \n");
-
-      
     } catch (err) {
-      console.log(err);
+      console.error("Error uploading sound:", err);
+      res.status(500).render("error", {
+        message: "Fout bij uploaden: " + err.message
+      });
     }
   }
 );
 
-app.get("/", async (req, res) => {
-  //var sounditems = await Sound.find().sort("-play_count");
-  var sounditems = await Sound.find({'active' : 1}).sort("-play_count");
-  //console.log(sounditems);
-  res.render("start", {
-    sounditems: sounditems,
-  });
+app.get("/", async (req, res, next) => {
+  try {
+    const sounditems = await Sound.find({'active' : 1}).sort("-play_count");
+    res.render("start", {
+      sounditems: sounditems,
+    });
+  } catch (err) {
+    console.error("Error loading soundboard:", err);
+    next(err);
+  }
 });
 
-app.get('/:id', async function(req, res) {
-  var id = req.params.id;
-  
-  try { var sounditems = await Sound.find({'_id' : id});
-        res.render("start", {
-        sounditems: sounditems,
-  });
-  }
-  catch (e){
-        console.log(e);
-        res.redirect("/");
-  }
+app.get('/:id', async function(req, res, next) {
+  const id = req.params.id;
 
-
-  
- });
+  try {
+    const sounditems = await Sound.find({'_id' : id});
+    res.render("start", {
+      sounditems: sounditems
+    });
+  }
+  catch (err){
+    console.error("Error loading sound by ID:", err);
+    res.redirect("/");
+  }
+});
 
 app.post("/message", async function(req, res){
   try {
-    var type = req.body.type
-    var message = req.body.bericht;
-    var duration = req.body.duration;
+    const type = req.body.type;
+    const message = req.body.bericht;
+    const duration = req.body.duration;
+
+    if (!message) {
+      return res.status(400).json({ error: "Message is required" });
+    }
+
     io.emit("message", {
       boodschap: message,
-          type: type,
-          bericht: message,
-          duration: duration
-        })
-    res.end();
+      type: type || "info",
+      bericht: message,
+      duration: duration || 3000
+    });
 
+    res.status(200).json({ success: true });
   }
-  catch(e){
-    console.log(e)
+  catch(err){
+    console.error("Error sending message:", err);
+    res.status(500).json({ error: "Failed to send message" });
   }
 }) 
 
 app.post("/update", async (req, res) => {
   try {
-    var fileId = mongoose.Types.ObjectId(req.body.id);
-    //var length = format(req.body.duration);
-    //console.log(length);
-    const doc = await Sound.findOneAndUpdate(
+    if (!req.body.id) {
+      return res.status(400).json({ error: "Sound ID is required" });
+    }
+
+    const fileId = new mongoose.Types.ObjectId(req.body.id);
+
+    const updatedDoc = await Sound.findOneAndUpdate(
       { _id: fileId },
       { $inc: { play_count: 1 } },
-      //{ play_count: fileCounterNew },
       { new: true }
     );
-    const updatedDoc = await Sound.findById({ _id: fileId });
-    //console.log(updatedDoc);
-    io.emit("inhoud", { id: fileId, counter: updatedDoc.play_count });
-    //console.log(doc.play_count);
-    res.end();
+
+    if (!updatedDoc) {
+      return res.status(404).json({ error: "Sound not found" });
+    }
+
+    // Emit updated play count to all clients
+    io.emit("inhoud", {
+      id: fileId,
+      counter: updatedDoc.play_count
+    });
+
+    res.status(200).json({
+      success: true,
+      playCount: updatedDoc.play_count
+    });
   } catch (err) {
-    console.log(err);
+    console.error("Error updating play count:", err);
+    res.status(500).json({ error: "Failed to update play count" });
   }
 });
 
@@ -250,8 +281,16 @@ io.on("connection", (socket) => {
 });
 
 http.listen(PORT, function () {
-  console.log("listening on *:" + PORT);
-  connectDb().then(() => {
-    console.log("MongoDb connected");
-  });
+  console.log(`Server listening on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+
+  connectDb()
+    .then(() => {
+      console.log("✅ MongoDB connected successfully");
+    })
+    .catch((err) => {
+      console.error("❌ MongoDB connection failed:", err.message);
+      console.error("Please check your MONGODB_URI in .env file");
+      process.exit(1);
+    });
 });
