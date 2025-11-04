@@ -134,6 +134,69 @@
   $(".container-grid a").click(function (event) {
      event.preventDefault();
    });
+
+  // ========================================
+  // Discord Integration
+  // ========================================
+
+  let discordEnabled = false;
+
+  // Check Discord status on page load
+  function checkDiscordStatus() {
+    $.get("/api/discord/status", function(data) {
+      if (data.enabled && data.connected) {
+        discordEnabled = data.playbackEnabled;
+        updateDiscordButton();
+        console.log("Discord bot status:", data);
+      } else {
+        // Hide Discord button if not available
+        $(".discord-control").hide();
+      }
+    }).fail(function() {
+      $(".discord-control").hide();
+    });
+  }
+
+  // Update Discord button appearance
+  function updateDiscordButton() {
+    if (discordEnabled) {
+      $("#discord-status-text").text("Discord: ON");
+      $("#discord-toggle").css("background", "#3ba55d"); // Green when ON
+    } else {
+      $("#discord-status-text").text("Discord: OFF");
+      $("#discord-toggle").css("background", "#5865F2"); // Discord blue when OFF
+    }
+  }
+
+  // Toggle Discord playback
+  $("#discord-toggle").click(function() {
+    discordEnabled = !discordEnabled;
+
+    $.post("/api/discord/toggle",
+      { enabled: discordEnabled },
+      function(data) {
+        if (data.success) {
+          discordEnabled = data.enabled;
+          updateDiscordButton();
+
+          // Show notification
+          $.post("/message", {
+            "type": "info",
+            "bericht": discordEnabled ? "Discord playback ingeschakeld 🎵" : "Discord playback uitgeschakeld 🔇",
+            "duration": 2000
+          });
+        }
+      }
+    ).fail(function() {
+      console.error("Failed to toggle Discord");
+      // Revert on failure
+      discordEnabled = !discordEnabled;
+      updateDiscordButton();
+    });
+  });
+
+  // Initialize Discord status
+  checkDiscordStatus();
 });
 
 

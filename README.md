@@ -12,12 +12,14 @@ Een interactieve soundboard webapplicatie gebouwd met Node.js, Express, Socket.I
 - 🔗 **Share Links** - Deel directe links naar individuele sounds
 - 🛡️ **Rate Limiting** - Bescherming tegen misbruik van API endpoints
 - 🐳 **Docker Support** - Makkelijke deployment via Docker
+- 🎮 **Discord Integration** - Speel sounds af in Discord voice channels
 
 ## Vereisten
 
 - Node.js (versie 18 of hoger aanbevolen)
 - MongoDB (lokaal of remote)
 - npm of yarn package manager
+- FFmpeg (optioneel, voor Discord audio playback)
 
 ## Installatie
 
@@ -76,6 +78,146 @@ npm start
 ```
 
 De applicatie is nu beschikbaar op `http://localhost:3030`
+
+## 🎮 Discord Integration Setup (Optioneel)
+
+De soundboard kan audio afspelen in Discord voice channels! Wanneer je een sound klikt op de webapp, wordt deze automatisch ook afgespeeld in Discord.
+
+### Vereisten
+
+- Discord account en een Discord server waar je admin bent
+- FFmpeg geïnstalleerd op je systeem
+
+### FFmpeg Installatie
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get update
+sudo apt-get install ffmpeg
+```
+
+**macOS:**
+```bash
+brew install ffmpeg
+```
+
+**Windows:**
+Download van [ffmpeg.org](https://ffmpeg.org/download.html) en voeg toe aan PATH
+
+### Discord Bot Aanmaken
+
+#### 1. Maak een Discord Application
+
+1. Ga naar [Discord Developer Portal](https://discord.com/developers/applications)
+2. Klik op **"New Application"**
+3. Geef je bot een naam (bijv. "Soundboard Bot")
+4. Klik **"Create"**
+
+#### 2. Maak een Bot User
+
+1. Ga naar de **"Bot"** tab in het linker menu
+2. Klik **"Add Bot"** → **"Yes, do it!"**
+3. Onder **"TOKEN"** klik **"Reset Token"** en kopieer de token
+   - ⚠️ **Belangrijk**: Deel deze token NOOIT publiekelijk!
+   - Bewaar deze veilig, je hebt hem nodig voor `.env`
+
+#### 3. Bot Permissions Configureren
+
+In de **"Bot"** tab:
+- Scroll naar **"Privileged Gateway Intents"**
+- ✅ Zet **"SERVER MEMBERS INTENT"** aan (optioneel)
+- ✅ Zet **"MESSAGE CONTENT INTENT"** aan (optioneel)
+
+#### 4. Uitnodiging URL Genereren
+
+1. Ga naar **"OAuth2"** → **"URL Generator"** tab
+2. Selecteer **SCOPES**:
+   - ✅ `bot`
+   - ✅ `applications.commands` (optioneel)
+3. Selecteer **BOT PERMISSIONS**:
+   - ✅ `View Channels`
+   - ✅ `Connect` (to voice channels)
+   - ✅ `Speak` (play audio)
+   - ✅ `Use Voice Activity`
+4. Kopieer de **Generated URL** onderaan de pagina
+5. Open deze URL in je browser
+6. Selecteer je Discord server en klik **"Authorize"**
+
+#### 5. Discord IDs Verzamelen
+
+**Developer Mode aanzetten:**
+1. Open Discord
+2. User Settings (tandwiel) → **Advanced**
+3. ✅ Zet **"Developer Mode"** AAN
+
+**Server ID vinden:**
+- Rechtermuisklik op je server icon (links) → **"Copy Server ID"**
+
+**Voice Channel ID vinden:**
+- Rechtermuisklik op het voice channel waar de bot moet joinen → **"Copy Channel ID"**
+
+#### 6. .env Configureren
+
+Voeg deze regels toe aan je `.env` file:
+
+```env
+# Discord Bot Configuration
+DISCORD_ENABLED=true
+DISCORD_BOT_TOKEN=jouw_bot_token_hier_van_stap_2
+DISCORD_GUILD_ID=jouw_server_id_van_stap_5
+DISCORD_VOICE_CHANNEL_ID=jouw_voice_channel_id_van_stap_5
+DISCORD_AUTO_JOIN=true
+```
+
+#### 7. Server Herstarten
+
+```bash
+npm run dev
+```
+
+Je zou moeten zien:
+```
+🎮 Discord integration enabled
+🤖 Initializing Discord bot...
+✅ Discord bot logged in as YourBotName#1234
+✅ Discord bot ready!
+🔊 Joining voice channel: General
+✅ Voice connection is ready
+```
+
+### Gebruik
+
+1. Open de soundboard webapp in je browser
+2. Je ziet een **Discord toggle button** rechts bovenaan (paarse knop)
+3. Klik op de knop om Discord playback **AAN** te zetten (wordt groen)
+4. Klik op een sound → speelt af in browser **EN** in Discord!
+5. Klik nogmaals op de knop om Discord playback **UIT** te zetten
+
+### API Endpoints
+
+De Discord integratie biedt ook API endpoints:
+
+- `GET /api/discord/status` - Bot status ophalen
+- `POST /api/discord/toggle` - Playback aan/uit
+- `POST /api/discord/join` - Voice channel joinen
+- `POST /api/discord/leave` - Voice channel verlaten
+
+### Troubleshooting
+
+**Bot joint niet de voice channel:**
+- Check of de `DISCORD_VOICE_CHANNEL_ID` correct is
+- Check of de bot de juiste permissions heeft
+- Kijk in de server console voor error messages
+
+**Geen audio in Discord:**
+- Check of FFmpeg correct geïnstalleerd is: `ffmpeg -version`
+- Check of audio files in `public/uploads/sounds/` staan
+- Kijk in console voor "Audio player error" messages
+
+**Discord button niet zichtbaar:**
+- Check of `DISCORD_ENABLED=true` in `.env`
+- Check of bot token geldig is
+- Herstart de server
 
 ## Docker Deployment
 
