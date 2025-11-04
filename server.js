@@ -18,6 +18,10 @@ const mongoose = require("mongoose");
 
 const rateLimit = require("express-rate-limit");
 
+// Discord Bot Integration
+const DiscordBot = require("./src/discord-bot");
+let discordBot = null;
+
 // Configure rate limiter with environment variables
 const apiLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 30000, // 30 seconds default
@@ -247,6 +251,11 @@ app.post("/update", async (req, res) => {
       counter: updatedDoc.play_count
     });
 
+    // Play sound in Discord if bot is connected and enabled
+    if (discordBot && updatedDoc.audio_file) {
+      await discordBot.playSound(updatedDoc.audio_file);
+    }
+
     res.status(200).json({
       success: true,
       playCount: updatedDoc.play_count
@@ -255,6 +264,73 @@ app.post("/update", async (req, res) => {
     console.error("Error updating play count:", err);
     res.status(500).json({ error: "Failed to update play count" });
   }
+});
+
+// ========================================
+// Discord Bot API Endpoints
+// ========================================
+
+// Get Discord bot status
+app.get("/api/discord/status", (req, res) => {
+  if (!discordBot) {
+    return res.json({
+      enabled: false,
+      message: "Discord integration not enabled"
+    });
+  }
+
+  const status = discordBot.getStatus();
+  res.json({
+    enabled: true,
+    ...status
+  });
+});
+
+// Toggle Discord playback on/off
+app.post("/api/discord/toggle", (req, res) => {
+  if (!discordBot) {
+    return res.status(400).json({
+      error: "Discord bot not initialized"
+    });
+  }
+
+  const enabled = req.body.enabled === true || req.body.enabled === "true";
+  discordBot.togglePlayback(enabled);
+
+  res.json({
+    success: true,
+    enabled: discordBot.playbackEnabled
+  });
+});
+
+// Join voice channel
+app.post("/api/discord/join", async (req, res) => {
+  if (!discordBot) {
+    return res.status(400).json({
+      error: "Discord bot not initialized"
+    });
+  }
+
+  const success = await discordBot.joinVoiceChannel();
+  res.json({
+    success: success,
+    message: success ? "Joined voice channel" : "Failed to join voice channel"
+  });
+});
+
+// Leave voice channel
+app.post("/api/discord/leave", (req, res) => {
+  if (!discordBot) {
+    return res.status(400).json({
+      error: "Discord bot not initialized"
+    });
+  }
+
+  const success = discordBot.leaveVoiceChannel();
+  res.json({
+    success: success,
+    message: success ? "Left voice channel" : "Not in voice channel"
+  });
 });
 
 app.use(function (err, req, res, next) {
@@ -280,10 +356,11 @@ io.on("connection", (socket) => {
   });
 });
 
-http.listen(PORT, function () {
+http.listen(PORT, async function () {
   console.log(`Server listening on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 
+  // Connect to MongoDB
   connectDb()
     .then(() => {
       console.log("✅ MongoDB connected successfully");
@@ -293,4 +370,20 @@ http.listen(PORT, function () {
       console.error("Please check your MONGODB_URI in .env file");
       process.exit(1);
     });
+
+  // Initialize Discord Bot if enabled
+  if (process.env.DISCORD_ENABLED === 'true') {
+    console.log('🎮 Discord integration enabled');
+    discordBot = new DiscordBot();
+    const connected = await discordBot.connect();
+
+    if (connected) {
+      console.log('✅ Discord bot ready!');
+    } else {
+      console.log('⚠️  Discord bot failed to initialize');
+      discordBot = null;
+    }
+  } else {
+    console.log('ℹ️  Discord integration disabled (set DISCORD_ENABLED=true to enable)');
+  }
 });
