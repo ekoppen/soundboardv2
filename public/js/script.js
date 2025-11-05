@@ -11,17 +11,20 @@
       var audio = $(this);
       var that = this;
     
-      // Check if this sound is a favorite
+      // Check if this sound is a favorite or hidden
       const soundId = audio.attr("id");
       const isFavorite = StorageHelper.isFavorite(soundId);
+      const isHidden = StorageHelper.isHidden(soundId);
       const favoriteClass = isFavorite ? " is-favorite" : "";
+      const hiddenClass = isHidden ? " is-hidden" : "";
       const favoriteIcon = isFavorite ? "fa-solid" : "fa-regular";
+      const hiddenIcon = isHidden ? "fa-eye-slash" : "fa-eye";
 
       $(".container-grid").append(
         $(
-         '<div class="card' + favoriteClass + '" id="' +
+         '<div class="card' + favoriteClass + hiddenClass + '" id="' +
             audio.attr("id") +
-            '" data-favorite="' + isFavorite + '">' +
+            '" data-favorite="' + isFavorite + '" data-hidden="' + isHidden + '">' +
               '<div class="top-bar">'  +
                 '<div class="progress"></div>' +
               '</div>' +
@@ -46,6 +49,9 @@
                 '<div class="sound-actions">' +
                   '<div class="sound-favorite" data-sound-id="' + audio.attr("id") + '">' +
                     '<i class="' + favoriteIcon + ' fa-star"></i>' +
+                  '</div>' +
+                  '<div class="sound-hide" data-sound-id="' + audio.attr("id") + '">' +
+                    '<i class="fa-regular ' + hiddenIcon + '"></i>' +
                   '</div>' +
                   '<div class="sound-share">' +
                     '<i class="fa-regular fa-share-from-square"></i>' +
@@ -153,6 +159,46 @@
   sortSoundsByFavorites();
 
   // ========================================
+  // Show/Hide Hidden Sounds
+  // ========================================
+  window.showHiddenSounds = false; // Global state
+
+  function updateHiddenSoundsVisibility() {
+    const hiddenCards = $(".card.is-hidden");
+
+    if (window.showHiddenSounds) {
+      // Show all hidden sounds with reduced opacity
+      hiddenCards.fadeIn(300);
+    } else {
+      // Hide all hidden sounds
+      hiddenCards.fadeOut(300);
+    }
+  }
+
+  // Show Hidden Toggle Button
+  $("#show-hidden-toggle").click(function() {
+    window.showHiddenSounds = !window.showHiddenSounds;
+
+    const icon = $(this).find("i");
+    const text = $("#show-hidden-text");
+
+    if (window.showHiddenSounds) {
+      $(this).css("background", "#28a745"); // Green when showing hidden
+      icon.removeClass("fa-eye-slash").addClass("fa-eye");
+      text.text("Hiding Hidden");
+    } else {
+      $(this).css("background", "#6c757d"); // Gray when hiding hidden
+      icon.removeClass("fa-eye").addClass("fa-eye-slash");
+      text.text("Show Hidden");
+    }
+
+    updateHiddenSoundsVisibility();
+  });
+
+  // Initial hide of hidden sounds on page load
+  updateHiddenSoundsVisibility();
+
+  // ========================================
   // Favorite Button Handler
   // ========================================
   $(".sound-favorite").click(function(e){
@@ -186,6 +232,45 @@
 
     // Re-sort sounds to put favorites on top
     sortSoundsByFavorites();
+  });
+
+  // ========================================
+  // Hide Button Handler
+  // ========================================
+  $(".sound-hide").click(function(e){
+    e.stopPropagation(); // Prevent sound from playing
+
+    const soundId = $(this).data("sound-id");
+    const card = $("#" + soundId);
+    const icon = $(this).find("i");
+
+    // Toggle hidden
+    const isHidden = StorageHelper.toggleHidden(soundId);
+
+    // Update UI
+    if (isHidden) {
+      card.addClass("is-hidden").attr("data-hidden", "true");
+      icon.removeClass("fa-eye").addClass("fa-eye-slash");
+      $.post("/message", {
+        "type": "info",
+        "bericht": "👁️ Sound verborgen",
+        "duration": 2000
+      });
+
+      // Hide the card if we're not showing hidden sounds
+      if (!window.showHiddenSounds) {
+        card.fadeOut(300);
+      }
+    } else {
+      card.removeClass("is-hidden").attr("data-hidden", "false");
+      icon.removeClass("fa-eye-slash").addClass("fa-eye");
+      $.post("/message", {
+        "type": "success",
+        "bericht": "👁️ Sound zichtbaar",
+        "duration": 2000
+      });
+      card.fadeIn(300);
+    }
   });
 
   // ========================================

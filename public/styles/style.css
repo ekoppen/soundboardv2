@@ -767,6 +767,35 @@ span {
   color: #ccc; /* Empty star is gray */
 }
 
+/* Hide Button */
+.sound-hide {
+  position: relative;
+  display: block;
+  color: #ccc;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.sound-hide:hover {
+  transform: scale(1.2);
+  color: #ff6b6b; /* Red on hover */
+}
+
+.sound-hide i {
+  color: #ccc;
+  width: 20px;
+  height: 20px;
+}
+
+.sound-hide i.fa-eye-slash {
+  color: #ff6b6b; /* Red when hidden */
+}
+
+.sound-hide i.fa-eye {
+  color: #ccc; /* Gray when visible */
+}
+
 /* Share Button */
 .sound-share {
   position: relative;
@@ -798,4 +827,20 @@ span {
   background: linear-gradient(90deg,
     rgba(255, 215, 0, 0.2) 0%,
     rgba(255, 215, 0, 0.05) 100%);
+}
+
+/* Hidden Card Styling - reduced opacity when shown */
+.card.is-hidden {
+  opacity: 0.4;
+  transition: opacity 0.3s ease;
+}
+
+.card.is-hidden:hover {
+  opacity: 0.7; /* More visible on hover for interaction */
+}
+
+.card.is-hidden .top-bar {
+  background: linear-gradient(90deg,
+    rgba(255, 107, 107, 0.2) 0%,
+    rgba(255, 107, 107, 0.05) 100%);
 }
