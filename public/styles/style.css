@@ -844,3 +844,49 @@ span {
     rgba(255, 107, 107, 0.2) 0%,
     rgba(255, 107, 107, 0.05) 100%);
 }
+
+/* ========================================
+   Drag & Drop Styling
+   ======================================== */
+
+/* Make cards feel draggable */
+.card {
+  cursor: move;
+  cursor: grab;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.card:active {
+  cursor: grabbing;
+}
+
+/* Ghost - placeholder where item was */
+.sortable-ghost {
+  opacity: 0.4;
+  background: #444;
+  border: 2px dashed #666;
+}
+
+/* Chosen - item being dragged */
+.sortable-chosen {
+  cursor: grabbing !important;
+}
+
+/* Drag - item while dragging */
+.sortable-drag {
+  opacity: 0.8;
+  transform: rotate(2deg) scale(1.05);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
+  z-index: 9999;
+  cursor: grabbing !important;
+}
+
+/* Container during drag */
+.container-grid {
+  position: relative;
+}
+
+/* Smooth transitions for reordering */
+.card {
+  transition: transform 0.15s ease;
+}

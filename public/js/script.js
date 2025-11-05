@@ -362,6 +362,92 @@
 
   // Initialize Discord status
   checkDiscordStatus();
+
+  // ========================================
+  // Drag & Drop Reordering
+  // ========================================
+
+  // Apply custom order from localStorage
+  function applyCustomOrder() {
+    const customOrder = StorageHelper.getCustomOrder();
+    if (customOrder.length === 0) return; // No custom order saved
+
+    const container = $(".container-grid");
+    const cards = container.children(".card");
+
+    // Create a map of cards by ID for quick lookup
+    const cardMap = {};
+    cards.each(function() {
+      const id = $(this).attr("id");
+      cardMap[id] = $(this);
+    });
+
+    // Re-append cards in custom order
+    customOrder.forEach(function(id) {
+      if (cardMap[id]) {
+        container.append(cardMap[id]);
+      }
+    });
+
+    // Append any cards not in custom order (newly added sounds)
+    cards.each(function() {
+      const id = $(this).attr("id");
+      if (!customOrder.includes(id)) {
+        container.append($(this));
+      }
+    });
+  }
+
+  // Save current order to localStorage
+  function saveCustomOrder() {
+    const order = [];
+    $(".container-grid .card").each(function() {
+      order.push($(this).attr("id"));
+    });
+    StorageHelper.saveCustomOrder(order);
+    console.log("Custom order saved:", order.length, "sounds");
+  }
+
+  // Initialize Sortable.js
+  const container = document.querySelector(".container-grid");
+  if (container) {
+    const sortable = Sortable.create(container, {
+      animation: 150,
+      ghostClass: "sortable-ghost",
+      chosenClass: "sortable-chosen",
+      dragClass: "sortable-drag",
+      handle: ".card", // Entire card is draggable
+      draggable: ".card",
+
+      // Save order after drag
+      onEnd: function(evt) {
+        console.log("Drag ended, saving order...");
+        saveCustomOrder();
+
+        // Show notification
+        $.post("/message", {
+          "type": "success",
+          "bericht": "🔄 Volgorde opgeslagen",
+          "duration": 1500
+        });
+      },
+
+      // Visual feedback during drag
+      onStart: function(evt) {
+        console.log("Drag started");
+      }
+    });
+
+    console.log("✅ Drag & Drop enabled");
+  }
+
+  // Apply saved custom order on page load
+  // This should run after favorites sort
+  setTimeout(function() {
+    applyCustomOrder();
+    console.log("Custom order applied from localStorage");
+  }, 100);
+
 });
 
 
