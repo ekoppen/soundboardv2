@@ -219,19 +219,201 @@ De Discord integratie biedt ook API endpoints:
 - Check of bot token geldig is
 - Herstart de server
 
-## Docker Deployment
+## 🐳 Docker Deployment
 
-### Met Docker Compose (aanbevolen)
+Docker Compose maakt het eenvoudig om de hele stack (MongoDB + Soundboard) te draaien met slechts één commando. Alle data wordt automatisch bewaard in Docker volumes.
 
+### Vereisten
+
+- Docker Engine 20.10+
+- Docker Compose v2.0+
+
+### Quick Start
+
+**1. Clone de repository**
+```bash
+git clone <repository-url>
+cd soundboardv2
+```
+
+**2. Configureer environment variabelen**
+```bash
+cp .env.example .env
+# Bewerk .env indien nodig (zie Custom Poorten hieronder)
+```
+
+**3. Start de stack**
 ```bash
 docker-compose up -d
 ```
 
-### Handmatige Docker build
+**4. Open in browser**
+```
+http://localhost:3030
+```
+
+### Custom Poorten Configureren
+
+De `.env` file bevat poort configuratie variabelen die je naar wens kunt aanpassen:
+
+```env
+# Soundboard webapp poort (standaard: 3030)
+APP_PORT=3030
+
+# MongoDB poort (standaard: 27017)
+MONGODB_PORT=27017
+```
+
+**Voorbeelden:**
 
 ```bash
+# Gebruik poort 8080 voor de webapp
+APP_PORT=8080 docker-compose up -d
+# Toegang: http://localhost:8080
+
+# Gebruik poort 27018 voor MongoDB (als 27017 al in gebruik is)
+MONGODB_PORT=27018 docker-compose up -d
+```
+
+### Docker Compose Commando's
+
+```bash
+# Start alle services (detached mode)
+docker-compose up -d
+
+# Bekijk logs
+docker-compose logs -f
+docker-compose logs -f soundboard  # alleen soundboard logs
+docker-compose logs -f mongodb     # alleen MongoDB logs
+
+# Stop alle services (data blijft bewaard)
+docker-compose down
+
+# Stop en verwijder alle data (⚠️ PERMANENT!)
+docker-compose down -v
+
+# Rebuild na code wijzigingen
+docker-compose up -d --build
+
+# Check status van containers
+docker-compose ps
+
+# Herstart een specifieke service
+docker-compose restart soundboard
+```
+
+### Data Persistence & Volumes
+
+De Docker setup gebruikt named volumes voor data persistence:
+
+| Volume | Doel | Data |
+|--------|------|------|
+| `mongodb_data` | MongoDB database | Alle sounds, play counts, metadata |
+| `mongodb_config` | MongoDB configuratie | Database settings |
+| `upload_data` | Geüploade bestanden | Audio files en afbeeldingen |
+
+**Data backup maken:**
+
+```bash
+# Stop de services eerst
+docker-compose down
+
+# Backup MongoDB data
+docker run --rm -v soundboardv2_mongodb_data:/data -v $(pwd):/backup \
+  alpine tar czf /backup/mongodb-backup.tar.gz -C /data .
+
+# Backup uploads
+docker run --rm -v soundboardv2_upload_data:/data -v $(pwd):/backup \
+  alpine tar czf /backup/uploads-backup.tar.gz -C /data .
+```
+
+**Data restore:**
+
+```bash
+# Restore MongoDB data
+docker run --rm -v soundboardv2_mongodb_data:/data -v $(pwd):/backup \
+  alpine tar xzf /backup/mongodb-backup.tar.gz -C /data
+
+# Restore uploads
+docker run --rm -v soundboardv2_upload_data:/data -v $(pwd):/backup \
+  alpine tar xzf /backup/uploads-backup.tar.gz -C /data
+```
+
+### Discord Integration met Docker
+
+Om Discord te gebruiken in Docker, voeg de volgende variabelen toe aan je `.env`:
+
+```env
+DISCORD_ENABLED=true
+DISCORD_BOT_TOKEN=your_bot_token_here
+DISCORD_GUILD_ID=your_server_id
+DISCORD_VOICE_CHANNEL_ID=your_channel_id
+DISCORD_AUTO_JOIN=true
+DISCORD_VOLUME=0.5
+```
+
+Herstart de container om de wijzigingen toe te passen:
+```bash
+docker-compose restart soundboard
+```
+
+### Development met Docker
+
+Voor development kun je de lokale `public/upload` directory mounten:
+
+**Edit docker-compose.yml:**
+```yaml
+# Uncomment deze regel onder soundboard > volumes:
+- ./public/upload:/app/public/upload
+```
+
+Dit zorgt ervoor dat uploads direct beschikbaar zijn op je lokale filesystem.
+
+### Handmatige Docker Build (Zonder Compose)
+
+Als je alleen de soundboard container wilt draaien zonder docker-compose:
+
+```bash
+# Build image
 docker build -t soundboard-app .
-docker run -p 3030:3030 --env-file .env soundboard-app
+
+# Run container (zorg dat MongoDB al draait!)
+docker run -d \
+  --name soundboard \
+  -p 3030:3030 \
+  -e MONGODB_URI=mongodb://host.docker.internal:27017/soundboard \
+  -e NODE_ENV=production \
+  -v soundboard-uploads:/app/public/upload \
+  soundboard-app
+```
+
+### Troubleshooting
+
+**Container start niet:**
+```bash
+docker-compose logs soundboard
+```
+
+**MongoDB connection errors:**
+```bash
+# Check of MongoDB container draait
+docker-compose ps
+
+# Test MongoDB connectie
+docker-compose exec mongodb mongosh --eval "db.adminCommand('ping')"
+```
+
+**Port already in use:**
+```bash
+# Verander APP_PORT in .env of gebruik:
+APP_PORT=8080 docker-compose up -d
+```
+
+**Reset alles (factory reset):**
+```bash
+docker-compose down -v
+rm -rf public/upload/*
+docker-compose up -d
 ```
 
 ## Project Structuur

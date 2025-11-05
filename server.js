@@ -267,6 +267,25 @@ app.post("/update", async (req, res) => {
 });
 
 // ========================================
+// Health Check Endpoint (for Docker)
+// ========================================
+app.get("/health", (req, res) => {
+  const healthcheck = {
+    uptime: process.uptime(),
+    message: "OK",
+    timestamp: Date.now()
+  };
+
+  // Check database connection
+  if (mongoose.connection.readyState === 1) {
+    healthcheck.database = "connected";
+    res.status(200).json(healthcheck);
+  } else {
+    healthcheck.database = "disconnected";
+    res.status(503).json(healthcheck);
+  }
+});
+
 // Discord Bot API Endpoints
 // ========================================
 
