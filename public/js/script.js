@@ -11,11 +11,17 @@
       var audio = $(this);
       var that = this;
     
+      // Check if this sound is a favorite
+      const soundId = audio.attr("id");
+      const isFavorite = StorageHelper.isFavorite(soundId);
+      const favoriteClass = isFavorite ? " is-favorite" : "";
+      const favoriteIcon = isFavorite ? "fa-solid" : "fa-regular";
+
       $(".container-grid").append(
         $(
-         '<div class="card" id="' +
+         '<div class="card' + favoriteClass + '" id="' +
             audio.attr("id") +
-            '">' +
+            '" data-favorite="' + isFavorite + '">' +
               '<div class="top-bar">'  +
                 '<div class="progress"></div>' +
               '</div>' +
@@ -36,12 +42,15 @@
                     +
                   audio.attr("play_count") +
                   '</div>' +
-                
-                '<div class="sound-share">' +
-                  '<div id="share-link")><i class="fa-regular fa-share-from-square"></i></div>' +
 
-
-              '</div>' +
+                '<div class="sound-actions">' +
+                  '<div class="sound-favorite" data-sound-id="' + audio.attr("id") + '">' +
+                    '<i class="' + favoriteIcon + ' fa-star"></i>' +
+                  '</div>' +
+                  '<div class="sound-share">' +
+                    '<i class="fa-regular fa-share-from-square"></i>' +
+                  '</div>' +
+                '</div>' +
               '<div class="bottom-bar">' +
                 '<div class="sound-tags">' +
                   audio.attr("search_tags") +
@@ -112,22 +121,93 @@
     return ret;
   }
 
+  // ========================================
+  // Sort Sounds - Favorites First
+  // ========================================
+  function sortSoundsByFavorites() {
+    const container = $(".container-grid");
+    const cards = container.children(".card").get();
+
+    // Sort: favorites first, then by existing order
+    cards.sort(function(a, b) {
+      const aFav = $(a).attr("data-favorite") === "true";
+      const bFav = $(b).attr("data-favorite") === "true";
+
+      if (aFav && !bFav) return -1;
+      if (!aFav && bFav) return 1;
+      return 0; // Keep original order for non-favorites
+    });
+
+    // Re-append in sorted order
+    $.each(cards, function(index, card) {
+      container.append(card);
+    });
+
+    // Reinitialize Isotope if it's being used
+    if (typeof container.data('isotope') !== 'undefined') {
+      container.isotope('reloadItems').isotope();
+    }
+  }
+
+  // Initial sort on page load
+  sortSoundsByFavorites();
+
+  // ========================================
+  // Favorite Button Handler
+  // ========================================
+  $(".sound-favorite").click(function(e){
+    e.stopPropagation(); // Prevent sound from playing
+
+    const soundId = $(this).data("sound-id");
+    const card = $("#" + soundId);
+    const icon = $(this).find("i");
+
+    // Toggle favorite
+    const isFavorite = StorageHelper.toggleFavorite(soundId);
+
+    // Update UI
+    if (isFavorite) {
+      card.addClass("is-favorite").attr("data-favorite", "true");
+      icon.removeClass("fa-regular").addClass("fa-solid");
+      $.post("/message", {
+        "type": "success",
+        "bericht": "⭐ Toegevoegd aan favorieten",
+        "duration": 2000
+      });
+    } else {
+      card.removeClass("is-favorite").attr("data-favorite", "false");
+      icon.removeClass("fa-solid").addClass("fa-regular");
+      $.post("/message", {
+        "type": "info",
+        "bericht": "Verwijderd van favorieten",
+        "duration": 2000
+      });
+    }
+
+    // Re-sort sounds to put favorites on top
+    sortSoundsByFavorites();
+  });
+
+  // ========================================
+  // Share Button Handler
+  // ========================================
   $(".sound-share").click(function(e){
-    var idnummer = ($(this).parent()[0]).id;
+    e.stopPropagation(); // Prevent sound from playing
+
+    // Get the card ID (parent of parent = .sound-actions, then parent = .card)
+    var idnummer = $(this).closest(".card").attr("id");
     var linkto = "https://soundboard.pieuw.nl/" + idnummer;
 
-        function copyToClipboard(e) {
-          var $temp = $('<input class="hibbem">');
-          $("body").append($temp);
-          $($(".hibbem")).val(linkto).select();
-          document.execCommand("copy");
-          $(".hibbem").remove();
-          $.post("/message", { "type": "info", "bericht": "Link is gekopieerd", "link": linkto, "duration": 3000 });
-        }
+    function copyToClipboard(e) {
+      var $temp = $('<input class="hibbem">');
+      $("body").append($temp);
+      $($(".hibbem")).val(linkto).select();
+      document.execCommand("copy");
+      $(".hibbem").remove();
+      $.post("/message", { "type": "info", "bericht": "Link is gekopieerd", "link": linkto, "duration": 3000 });
+    }
 
     copyToClipboard(linkto);
-    e.stopPropagation()
-  
   });
 
 

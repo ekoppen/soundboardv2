@@ -726,19 +726,76 @@ span {
   top: -1000px;
 }
 
-.sound-share {
+/* Sound Actions Container - holds favorite and share buttons */
+.sound-actions {
   position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  right: 10px;
+  top: 10px;
+  z-index: 200;
+}
+
+/* Favorite Button */
+.sound-favorite {
+  position: relative;
   display: block;
   color: #ccc;
   font-size: 1.2rem;
-  left: 270px;
-  top: 10px;
   cursor: pointer;
-  z-index: 200;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.sound-favorite:hover {
+  transform: scale(1.2);
+  color: #ffd700; /* Gold color on hover */
+}
+
+.sound-favorite i {
+  color: #ffd700; /* Gold star */
+  width: 20px;
+  height: 20px;
+}
+
+.sound-favorite i.fa-solid {
+  color: #ffd700; /* Filled star is gold */
+  filter: drop-shadow(0 0 3px #ffd700);
+}
+
+.sound-favorite i.fa-regular {
+  color: #ccc; /* Empty star is gray */
+}
+
+/* Share Button */
+.sound-share {
+  position: relative;
+  display: block;
+  color: #ccc;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.sound-share:hover {
+  transform: scale(1.2);
 }
 
 .sound-share i {
   color: #fff;
-  width: 45px;
-  height: 45px;
+  width: 20px;
+  height: 20px;
+}
+
+/* Favorite Card Styling - subtle highlight */
+.card.is-favorite {
+  border: 2px solid #ffd700;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3),
+              5px 5px 5px 0px rgba(0, 0, 0, 0.4);
+}
+
+.card.is-favorite .top-bar {
+  background: linear-gradient(90deg,
+    rgba(255, 215, 0, 0.2) 0%,
+    rgba(255, 215, 0, 0.05) 100%);
 }
