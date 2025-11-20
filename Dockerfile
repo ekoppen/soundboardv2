@@ -11,7 +11,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Installeer dependencies (production only voor kleinere image)
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 # Kopieer applicatie code
 COPY . .

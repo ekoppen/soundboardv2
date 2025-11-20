@@ -108,7 +108,7 @@ function format(time) {
 
 app.get("/upload", (req, res) => {
   res.render("upload", {
-    imagePreview: "uploads/images/pieuw.png",
+    imagePreview: "/uploads/images/pieuw.png",
   });
 });
 
@@ -152,6 +152,7 @@ app.post(
         play_count: 0,
         active: 1,
         soundImage: getImageName(),
+        waveform_data: req.body.waveform_data || "[]",
       });
 
       await sound.save();
@@ -184,6 +185,24 @@ app.get("/", async (req, res, next) => {
   } catch (err) {
     console.error("Error loading soundboard:", err);
     next(err);
+  }
+});
+
+// Health Check Endpoint (for Docker) - Must be before /:id route
+app.get("/health", (req, res) => {
+  const healthcheck = {
+    uptime: process.uptime(),
+    message: "OK",
+    timestamp: Date.now()
+  };
+
+  // Check database connection
+  if (mongoose.connection.readyState === 1) {
+    healthcheck.database = "connected";
+    res.status(200).json(healthcheck);
+  } else {
+    healthcheck.database = "disconnected";
+    res.status(503).json(healthcheck);
   }
 });
 
@@ -263,26 +282,6 @@ app.post("/update", async (req, res) => {
   } catch (err) {
     console.error("Error updating play count:", err);
     res.status(500).json({ error: "Failed to update play count" });
-  }
-});
-
-// ========================================
-// Health Check Endpoint (for Docker)
-// ========================================
-app.get("/health", (req, res) => {
-  const healthcheck = {
-    uptime: process.uptime(),
-    message: "OK",
-    timestamp: Date.now()
-  };
-
-  // Check database connection
-  if (mongoose.connection.readyState === 1) {
-    healthcheck.database = "connected";
-    res.status(200).json(healthcheck);
-  } else {
-    healthcheck.database = "disconnected";
-    res.status(503).json(healthcheck);
   }
 });
 

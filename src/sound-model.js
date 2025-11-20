@@ -11,6 +11,7 @@ const soundSchema = new mongoose.Schema(
     sound_length: String,
     soundImage: String,
     active: Number,
+    waveform_data: String, // JSON array of normalized waveform values
   },
   { timestamps: { createdAt: "created_at" } }
 );
