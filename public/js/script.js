@@ -343,15 +343,30 @@ $(document).ready(function () {
       icon.removeClass("fa-eye").addClass("fa-eye-slash");
       // showToast("info", "Verborgen", "Sound verborgen 👁️", 2000);
 
-      // Hide the card if we're not showing hidden sounds
+      // Hide the card if we're not showing hidden sounds with slide animation
       if (!window.showHiddenSounds) {
-        card.fadeOut(300);
+        // Add sliding-out class for animation
+        card.addClass("sliding-out");
+
+        // After animation completes, hide the card
+        setTimeout(function() {
+          card.hide();
+          card.removeClass("sliding-out");
+        }, 300);
       }
     } else {
       card.removeClass("is-hidden").attr("data-hidden", "false");
       icon.removeClass("fa-eye-slash").addClass("fa-eye");
       // showToast("success", "Zichtbaar", "Sound zichtbaar 👁️", 2000);
-      card.fadeIn(300);
+
+      // Show with slide animation
+      card.show();
+      setTimeout(function() {
+        card.addClass("sliding-in");
+        setTimeout(function() {
+          card.removeClass("sliding-in");
+        }, 300);
+      }, 10);
     }
   });
 
@@ -427,8 +442,38 @@ $(document).ready(function () {
     }
   }
 
-  // Toggle Discord playback
+  // Discord password protection
+  const DISCORD_PASSWORD_KEY = 'discord_access_granted';
+  const DISCORD_PASSWORD = 'soundboard2025'; // Change this to your preferred password
+
+  function checkDiscordAccess() {
+    return localStorage.getItem(DISCORD_PASSWORD_KEY) === 'true';
+  }
+
+  function grantDiscordAccess() {
+    localStorage.setItem(DISCORD_PASSWORD_KEY, 'true');
+  }
+
+  function promptDiscordPassword() {
+    const password = prompt('Voer wachtwoord in voor Discord controle:');
+    if (password === DISCORD_PASSWORD) {
+      grantDiscordAccess();
+      return true;
+    } else if (password !== null) {
+      showToast("error", "Toegang geweigerd", "Onjuist wachtwoord", 3000);
+    }
+    return false;
+  }
+
+  // Toggle Discord playback with password protection
   $("#discord-toggle").click(function() {
+    // Check if user has access
+    if (!checkDiscordAccess()) {
+      if (!promptDiscordPassword()) {
+        return; // Exit if password is incorrect or cancelled
+      }
+    }
+
     discordEnabled = !discordEnabled;
 
     $.post("/api/discord/toggle",
@@ -1159,8 +1204,15 @@ $(document).ready(function () {
 
       // Check if playback is complete
       if (elapsed >= currentTimelineEnd) {
-        // Playback complete
-        stopPlayback();
+        // Playback complete - reset everything
+        stopPlaybackInternal();
+
+        // Reset playhead to beginning
+        updatePlayheadPosition(groupSoundsEl, 0);
+
+        // Clear pause position
+        delete pausedPositions[groupId];
+
         return;
       }
 

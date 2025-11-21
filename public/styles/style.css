@@ -1487,6 +1487,28 @@ main {
   box-shadow: 5px 5px 5px 0px rgba(0, 0, 0, 0.4);
   cursor: pointer;
   overflow: hidden;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Slide animation for hiding sounds */
+.card.sliding-out {
+  opacity: 0;
+  transform: translateX(-20px) scale(0.95);
+}
+
+.card.sliding-in {
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
 }
 
 .top-bar {
@@ -1646,101 +1668,120 @@ main {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 8px;
-  right: 8px;
-  top: 2px;
+  gap: 3px;
+  right: 5px;
+  top: 5px;
   z-index: 200;
-  padding: 2px 4px;
-  background: rgba(0, 0, 0, 0.3);
+  padding: 2px;
+  background: rgba(0, 0, 0, 0.5);
   border-radius: 8px;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
-/* Favorite Button */
+/* Favorite Button - Apple-style glassmorphic design */
 .sound-favorite {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ccc;
-  font-size: 1rem;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   cursor: pointer;
-  transition: transform 0.15s ease, color 0.2s ease;
-  padding: 2px;
+  transition: all 0.2s ease;
 }
 
 .sound-favorite:hover {
-  transform: scale(1.15);
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: scale(1.08);
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
 }
 
 .sound-favorite i {
-  color: #ffd700; /* Gold star */
-  width: 16px;
-  height: 16px;
+  font-size: 9px;
+  transition: all 0.2s ease;
 }
 
 .sound-favorite i.fa-solid {
   color: #ffd700; /* Filled star is gold */
-  filter: drop-shadow(0 0 2px #ffd700);
+  filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.6));
 }
 
 .sound-favorite i.fa-regular {
-  color: #ccc; /* Empty star is gray */
+  color: rgba(255, 255, 255, 0.7); /* Empty star is light */
 }
 
-/* Hide Button */
+/* Hide Button - Apple-style glassmorphic design */
 .sound-hide {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ccc;
-  font-size: 1rem;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   cursor: pointer;
-  transition: transform 0.15s ease, color 0.2s ease;
-  padding: 2px;
+  transition: all 0.2s ease;
 }
 
 .sound-hide:hover {
-  transform: scale(1.15);
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: scale(1.08);
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
 }
 
 .sound-hide i {
-  color: #ccc;
-  width: 16px;
-  height: 16px;
+  font-size: 9px;
+  transition: all 0.2s ease;
 }
 
 .sound-hide i.fa-eye-slash {
   color: #ff6b6b; /* Red when hidden */
+  filter: drop-shadow(0 0 3px rgba(255, 107, 107, 0.4));
 }
 
 .sound-hide i.fa-eye {
-  color: #ccc; /* Gray when visible */
+  color: rgba(255, 255, 255, 0.7); /* Light when visible */
 }
 
-/* Share Button */
+/* Share Button - Apple-style glassmorphic design */
 .sound-share {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ccc;
-  font-size: 1rem;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   cursor: pointer;
-  transition: transform 0.15s ease, color 0.2s ease;
-  padding: 2px;
+  transition: all 0.2s ease;
 }
 
 .sound-share:hover {
-  transform: scale(1.15);
-  color: #4a9eff;
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: scale(1.08);
+  box-shadow: 0 2px 8px rgba(74, 158, 255, 0.3);
 }
 
 .sound-share i {
-  color: #ccc;
-  width: 16px;
-  height: 16px;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 0.2s ease;
+}
+
+.sound-share:hover i {
+  color: #4a9eff;
+  filter: drop-shadow(0 0 3px rgba(74, 158, 255, 0.4));
 }
 
 /* macOS style card buttons */
