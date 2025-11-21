@@ -175,6 +175,10 @@ $(document).ready(function () {
           } else {
             that.play();
             //alert('music playing');
+
+            // Update play count and trigger Discord playback
+            $.post("/update", { "id": this.id });
+
             var duration = that.duration;
             //console.log(duration);
             var music = that;
@@ -436,17 +440,24 @@ $(document).ready(function () {
 
           // Show notification (local only)
           if (discordEnabled) {
-            // showToast("success", "Discord", "Playback ingeschakeld 🎵", 2000);
+            showToast("success", "Discord", "Playback ingeschakeld 🎵", 2000);
           } else {
-            // showToast("info", "Discord", "Playback uitgeschakeld 🔇", 2000);
+            showToast("info", "Discord", "Playback uitgeschakeld 🔇", 2000);
           }
         }
       }
-    ).fail(function() {
-      console.error("Failed to toggle Discord");
+    ).fail(function(xhr) {
+      console.error("Failed to toggle Discord:", xhr.responseJSON);
       // Revert on failure
       discordEnabled = !discordEnabled;
       updateDiscordButton();
+
+      // Show error message
+      if (xhr.responseJSON && xhr.responseJSON.error) {
+        showToast("error", "Discord Error", xhr.responseJSON.error, 4000);
+      } else {
+        showToast("error", "Discord Error", "Discord bot niet beschikbaar. Check .env configuratie.", 4000);
+      }
     });
   });
 

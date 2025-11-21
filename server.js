@@ -271,7 +271,14 @@ app.post("/update", async (req, res) => {
     });
 
     // Play sound in Discord if bot is connected and enabled
+    console.log('🔍 Discord check:', {
+      discordBotExists: !!discordBot,
+      audioFile: updatedDoc.audio_file,
+      botStatus: discordBot ? discordBot.getStatus() : null
+    });
+
     if (discordBot && updatedDoc.audio_file) {
+      console.log('🎵 Attempting to play sound in Discord:', updatedDoc.audio_file);
       await discordBot.playSound(updatedDoc.audio_file);
     }
 
@@ -390,6 +397,8 @@ http.listen(PORT, async function () {
     });
 
   // Initialize Discord Bot if enabled
+  console.log(`DEBUG: DISCORD_ENABLED = "${process.env.DISCORD_ENABLED}" (type: ${typeof process.env.DISCORD_ENABLED})`);
+
   if (process.env.DISCORD_ENABLED === 'true') {
     console.log('🎮 Discord integration enabled');
     discordBot = new DiscordBot();

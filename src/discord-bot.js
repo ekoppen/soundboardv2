@@ -198,8 +198,10 @@ class DiscordBot {
         inlineVolume: true
       });
 
-      // Set volume (0.5 = 50%)
-      resource.volume?.setVolume(0.5);
+      // Set volume from environment or default to 1.0 (100%)
+      const volume = parseFloat(process.env.DISCORD_VOLUME) || 1.0;
+      console.log(`🔊 Setting Discord volume to: ${volume}`);
+      resource.volume?.setVolume(volume);
 
       this.audioPlayer.play(resource);
 
