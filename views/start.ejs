@@ -4,12 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="styles/style.css">
+    <link rel="stylesheet" href="styles/style.css?v=4.9">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Mina" />
     <meta name="viewport" content="width=device-width, 
     minimum-scale=1.0, maximum-scale=1.0">
     <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
-    <script src="../js/isotope.pkgd.js"></script>
+    <script src="/js/isotope.pkgd.js"></script>
+    <script src="/js/storage-helper.js"></script>
+    <script src="/js/groups-helper.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
     <script src="socket.io/socket.io.js"></script>
     <script src="https://kit.fontawesome.com/4191eec88b.js" crossorigin="anonymous"></script>
@@ -20,7 +23,21 @@
     <nav>
         <div class="topnav" id="myTopnav">
             <a href="/" class="active menu">Home</a>
-            <a href="/upload" class="menu">Upload</a>
+            <a href="/studio" class="menu">Studio</a>
+
+            <div class="nav-controls">
+                <input type="text" class="quicksearch" placeholder="zoek op naam of tag" />
+                <button id="add-group-btn" class="nav-icon-btn" title="Nieuwe Groep">
+                    <i class="fas fa-plus"></i>
+                </button>
+                <button id="show-hidden-toggle" class="nav-icon-btn" title="Toggle Hidden Sounds">
+                    <i class="fa-regular fa-eye-slash"></i>
+                </button>
+                <button id="discord-toggle" class="nav-icon-btn" title="Toggle Discord Integration">
+                    <i class="fab fa-discord"></i>
+                </button>
+            </div>
+
             <div class="logged-in-user"></div>
             <div class="online-counter">
                 <div class="kat"><img src="/img/kat-1.png" /></div>
@@ -38,12 +55,76 @@
 
     <div class="main">
         <div class="bgboem"><img src="/img/boem.png" alt=""></div>
-        <input type="text" class="quicksearch" placeholder="zoek op naam of tag" /></input>
 
-        <div class="message-box">
-            <div class="message-title"></div>
-            <div class="message-content"></div>
+        <!-- Toast Notification Container -->
+        <div class="toast-container" id="toast-container"></div>
+
+        <!-- Sound Groups Section -->
+        <div class="groups-section" id="groups-section">
+            <div class="groups-container" id="groups-container">
+                <!-- Groups will be dynamically added here -->
+            </div>
         </div>
+
+        <!-- Welcome Modal -->
+        <div class="modal-overlay" id="welcome-modal-overlay">
+            <div class="welcome-modal">
+                <div class="modal-header">
+                    <h2>Welkom bij de Soundboard! 🎵</h2>
+                    <p>Ontdek de nieuwe functies</p>
+                </div>
+                <div class="modal-body">
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <div class="feature-icon">🔔</div>
+                            <div class="feature-content">
+                                <h3>Toast Notificaties</h3>
+                                <p>Ontvang vriendelijke meldingen voor je acties zonder het scherm te blokkeren</p>
+                            </div>
+                        </li>
+                        <li class="feature-item">
+                            <div class="feature-icon">⭐</div>
+                            <div class="feature-content">
+                                <h3>Favorieten</h3>
+                                <p>Markeer je favoriete sounds met een ster voor snelle toegang</p>
+                            </div>
+                        </li>
+                        <li class="feature-item">
+                            <div class="feature-icon">👁️</div>
+                            <div class="feature-content">
+                                <h3>Verberg Sounds</h3>
+                                <p>Verberg sounds die je tijdelijk niet wilt zien, schakel ze gemakkelijk aan/uit</p>
+                            </div>
+                        </li>
+                        <li class="feature-item">
+                            <div class="feature-icon">🔗</div>
+                            <div class="feature-content">
+                                <h3>Deel Functie</h3>
+                                <p>Kopieer een directe link naar een sound om te delen met anderen</p>
+                            </div>
+                        </li>
+                        <li class="feature-item">
+                            <div class="feature-icon">🎮</div>
+                            <div class="feature-content">
+                                <h3>Discord Integratie</h3>
+                                <p>Speel sounds af in Discord voice channels met één klik</p>
+                            </div>
+                        </li>
+                        <li class="feature-item">
+                            <div class="feature-icon">🔄</div>
+                            <div class="feature-content">
+                                <h3>Drag & Drop Sortering</h3>
+                                <p>Versleep sounds om ze op volgorde te zetten. Je volgorde wordt automatisch opgeslagen</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" id="welcome-modal-close">Begrepen, laten we gaan! 🚀</button>
+                </div>
+            </div>
+        </div>
+
         <div class="container-grid">
         </div>
 
@@ -52,14 +133,15 @@
     
     <% sounditems.forEach(function(sounditem) { %>
         <section>
-            <audio class="<%= sounditem.class %>" 
+            <audio class="<%= sounditem.class %>"
                 title="<%= sounditem.title %>"
-                play_count="<%= sounditem.play_count %>" 
+                play_count="<%= sounditem.play_count %>"
                 id="<%= sounditem._id %>"
-                search_tags="<%= sounditem.search_tags %>" 
-                date_created="<%= sounditem.created_at %>" 
-                sound_length="<%= sounditem.sound_length %>" 
-                soundImage="<%= sounditem.soundImage %>" >
+                search_tags="<%= sounditem.search_tags %>"
+                date_created="<%= sounditem.created_at %>"
+                sound_length="<%= sounditem.sound_length %>"
+                soundImage="<%= sounditem.soundImage %>"
+                waveform_data="<%= sounditem.waveform_data || '[]' %>" >
 
                 <source src="/uploads/sounds/<%= sounditem.audio_file %>" />
             </audio>

@@ -6,7 +6,7 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="styles/style.css">
+    <link rel="stylesheet" href="/styles/style.css?v=2.0">
     <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
     <script src="socket.io/socket.io.js"></script>
     <script>
@@ -50,7 +50,7 @@
     <nav>
         <div class="topnav" id="myTopnav">
             <a href="/" class="menu">Home</a>
-            <a href="/upload" class="active menu">Upload</a>
+            <a href="/studio" class="menu">Studio</a>
             <div class="logged-in-user"></div>
             <div class="online-counter">
                 <div class="kat"><img src="/img/kat-1.png" /></div>
@@ -88,7 +88,10 @@
                             title="max 25 karakters"><br>
                         <label for="mySound">Geluid (verplicht):</label><br>
                         <input type="file" class ="inputSelect" name="mySound" id="mySound" accept=".mp3,.m4a" placeholder="geen" required /><br>
-                        <p id='f_du' ><p>
+                        <input type="hidden" name="f_du" id="f_du" value="0:00">
+                        <input type="hidden" name="waveform_data" id="waveform_data" value="">
+                        <p style="color: white; margin: 10px 0;">Duur: <span id="duration_display">0:00</span></p>
+                        <canvas id="waveform_preview" width="400" height="80" style="display:none; border: 1px solid #666; margin: 10px 0;"></canvas>
                         <label for="myImage">Plaatje (optioneel):</label><br><br>
                         <input type="file" class ="inputSelect" name="myImage" id="myImage" accept=".jpg,.jpeg,.png,.gif" placeholder="geen" class="myImage" /><br>
                         <input type="submit" value="Upload" class="submit"/>
@@ -136,24 +139,85 @@
                 ret += "" + secs;
                 return ret;
             }
-            //register canplaythrough event to #audio element to can get duration 
-            var f_duration = 0; //store duration 
-            document.getElementById('audio').addEventListener('canplaythrough', function(e){ 
-            //add duration in the input field #f_du 
-            f_duration = format(e.currentTarget.duration); 
-            document.getElementById('f_du').innerText = f_duration; 
-            URL.revokeObjectURL(obUrl); 
-            }); 
-            
-            //when select a file, create an ObjectURL with the file and add it in the #audio element 
-            var obUrl; 
-            document.getElementById('mySound').addEventListener('change', function(e){ 
-            var file = e.currentTarget.files[0]; 
-            //check file extension for audio/video type 
-            if(file.name.match(/\.(avi|mp3|mp4|m4a|mpeg|ogg)$/i)){ 
-            obUrl = URL.createObjectURL(file); 
-            document.getElementById('audio').setAttribute('src', obUrl); 
-            } 
+            //register canplaythrough event to #audio element to can get duration
+            var f_duration = 0; //store duration
+            document.getElementById('audio').addEventListener('canplaythrough', function(e){
+            //add duration in the input field #f_du
+            f_duration = format(e.currentTarget.duration);
+            document.getElementById('f_du').value = f_duration;
+            document.getElementById('duration_display').textContent = f_duration;
+            console.log('Duration set to:', f_duration);
+            URL.revokeObjectURL(obUrl);
+            });
+
+            // Waveform generation with Web Audio API
+            async function generateWaveform(file) {
+              try {
+                const arrayBuffer = await file.arrayBuffer();
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+                // Extract audio data (mix to mono if stereo)
+                const rawData = audioBuffer.getChannelData(0);
+                const samples = 200; // Number of waveform bars
+                const blockSize = Math.floor(rawData.length / samples);
+                const waveformData = [];
+
+                for (let i = 0; i < samples; i++) {
+                  let blockStart = blockSize * i;
+                  let sum = 0;
+                  for (let j = 0; j < blockSize; j++) {
+                    sum += Math.abs(rawData[blockStart + j]);
+                  }
+                  waveformData.push(sum / blockSize);
+                }
+
+                // Normalize to 0-1 range
+                const max = Math.max(...waveformData);
+                const normalized = waveformData.map(v => v / max);
+
+                // Store as JSON string
+                document.getElementById('waveform_data').value = JSON.stringify(normalized);
+
+                // Draw preview
+                drawWaveform(normalized);
+
+                console.log('✅ Waveform generated:', normalized.length, 'samples');
+              } catch (err) {
+                console.error('❌ Waveform generation failed:', err);
+              }
+            }
+
+            function drawWaveform(data) {
+              const canvas = document.getElementById('waveform_preview');
+              canvas.style.display = 'block';
+              const ctx = canvas.getContext('2d');
+              const width = canvas.width;
+              const height = canvas.height;
+              const barWidth = width / data.length;
+
+              ctx.clearRect(0, 0, width, height);
+              ctx.fillStyle = '#993333';
+
+              data.forEach((value, index) => {
+                const barHeight = value * (height / 2);
+                const x = index * barWidth;
+                const y = (height / 2) - (barHeight / 2);
+                ctx.fillRect(x, y, barWidth - 1, barHeight);
+              });
+            }
+
+            //when select a file, create an ObjectURL with the file and add it in the #audio element
+            var obUrl;
+            document.getElementById('mySound').addEventListener('change', function(e){
+            var file = e.currentTarget.files[0];
+            //check file extension for audio/video type
+            if(file.name.match(/\.(avi|mp3|mp4|m4a|mpeg|ogg)$/i)){
+            obUrl = URL.createObjectURL(file);
+            document.getElementById('audio').setAttribute('src', obUrl);
+            // Generate waveform
+            generateWaveform(file);
+            }
             });
         </script>
 </body>

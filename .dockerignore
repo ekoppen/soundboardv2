@@ -1,0 +1,53 @@
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+README.md
+TESTING_GUIDE.md
+TEST_REPORT.md
+TODO.md
+*.md
+!package.json
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Uploads (will be mounted as volume)
+public/upload/*
+
+# Logs
+logs
+*.log
+
+# Testing
+coverage
+.nyc_output
+
+# ESLint
+.eslintcache
+eslint.config.mjs
