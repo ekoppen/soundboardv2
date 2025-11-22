@@ -425,11 +425,15 @@ body {
    ======================================== */
 .groups-section {
   width: 100%;
-  margin: 30px auto;
-  padding: 0 20px;
-  position: relative;
-  z-index: 100;
+  margin: 0;
+  padding: 20px;
+  position: sticky;
+  top: 50px;
+  z-index: 1000;
   max-width: 1400px;
+  margin: 0 auto;
+  background: transparent;
+  backdrop-filter: blur(10px);
 }
 
 .groups-container {
@@ -467,7 +471,7 @@ body {
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  overflow: visible; /* Allow playhead triangles to extend beyond */
+  overflow: visible;
 }
 
 .sound-group:hover {

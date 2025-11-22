@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">
+    <title>Studio - Soundboard</title>
+    <link rel="stylesheet" href="/styles/style.css?v=2.0">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Mina" />
+    <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js@6.6.4/dist/wavesurfer.min.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js@6.6.4/dist/plugin/wavesurfer.regions.min.js"></script>
+    <script src="https://kit.fontawesome.com/4191eec88b.js" crossorigin="anonymous"></script>
+    <style>
+        .studio-container {
+            max-width: 1200px;
+            margin: 80px auto 50px;
+            padding: 30px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .studio-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        .studio-header h1 {
+            color: #fff;
+            font-size: 32px;
+            margin: 0;
+            font-family: 'Mina', sans-serif;
+            text-shadow: 0 2px 10px rgba(76, 175, 80, 0.3);
+        }
+        .studio-step {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.75) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+        .studio-step:hover {
+            border-color: rgba(76, 175, 80, 0.3);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.15);
+        }
+        .studio-step h2 {
+            color: #1a1a1a;
+            margin-bottom: 15px;
+            font-family: 'Mina', sans-serif;
+            font-weight: 600;
+            font-size: 18px;
+        }
+        .studio-step h3 {
+            color: #1a1a1a;
+            font-family: 'Mina', sans-serif;
+            font-size: 14px;
+        }
+        .studio-step.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            color: #1a1a1a;
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-family: 'Mina', sans-serif;
+            font-size: 13px;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            color: #1a1a1a;
+            font-size: 14px;
+        }
+        .form-group input[type="range"] {
+            width: 100%;
+        }
+        .btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: 'Mina', sans-serif;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+            text-transform: none;
+            letter-spacing: 0.3px;
+        }
+        .btn:hover {
+            background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
+            transform: translateY(-2px);
+        }
+        .btn:disabled {
+            background: linear-gradient(135deg, #666 0%, #555 100%);
+            cursor: not-allowed;
+            opacity: 0.6;
+            box-shadow: none;
+            transform: none;
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #333;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .audio-player {
+            margin: 20px 0;
+        }
+        .audio-player audio {
+            width: 100%;
+        }
+        .effects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .effect-control {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+        }
+        .effect-control label {
+            display: block;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-family: 'Mina', sans-serif;
+            font-size: 13px;
+        }
+        .range-value {
+            color: #4CAF50;
+            font-weight: 600;
+            margin-left: 8px;
+            font-size: 13px;
+        }
+        .info-message {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(76, 175, 80, 0.1) 100%);
+            border: 1px solid rgba(76, 175, 80, 0.4);
+            padding: 12px;
+            border-radius: 6px;
+            color: #1a1a1a;
+            margin: 10px 0;
+            font-size: 13px;
+        }
+        .info-message strong {
+            color: #2E7D32;
+        }
+        .success-message {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.3) 0%, rgba(76, 175, 80, 0.2) 100%);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            color: #1a1a1a;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 15px 0;
+            text-align: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .success-message a {
+            color: #2E7D32;
+            font-weight: bold;
+            text-decoration: underline;
+        }
+        .error-message {
+            background: #f44336;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .waveform-container {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 16px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        #waveform {
+            margin: 20px 0;
+        }
+        .waveform-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .waveform-controls button {
+            padding: 8px 14px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .waveform-controls button:hover {
+            background: #45a049;
+            transform: translateY(-1px);
+        }
+        .waveform-controls button.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .waveform-controls button.secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        .trim-info {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .trim-info span {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        /* Simple Radio Buttons */
+        .radio-group {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .radio-option {
+            display: flex;
+            align-items: center;
+        }
+        .radio-option input[type="radio"] {
+            margin-right: 8px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .radio-label {
+            color: #1a1a1a;
+            font-size: 14px;
+            cursor: pointer;
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="topnav" id="myTopnav">
+            <a href="/" class="menu">Home</a>
+            <a href="/studio" class="active menu">Studio</a>
+        </div>
+    </nav>
+
+    <div class="main">
+        <div class="bgboem"><img src="/img/boem.png" alt=""></div>
+
+        <!-- Toast Container -->
+        <div id="toast-container-studio" style="position: fixed; top: 80px; right: 20px; z-index: 9999;"></div>
+
+        <div class="studio-container">
+            <div class="studio-header">
+                <h1>Studio - Maak je eigen sound</h1>
+            </div>
+
+        <!-- Step 1: Source Selection & Download/Upload -->
+        <div class="studio-step" id="step-source">
+            <h2>Stap 1: Kies je bron</h2>
+            <div class="form-group">
+                <label>Audio bron:</label>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="source-youtube" name="source-type" value="youtube" checked>
+                        <label for="source-youtube" class="radio-label">
+                            YouTube Download
+                        </label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="source-upload" name="source-type" value="upload">
+                        <label for="source-upload" class="radio-label">
+                            Upload eigen bestand
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- YouTube Section -->
+            <div id="youtube-section">
+                <div class="form-group">
+                    <label for="youtube-url">YouTube URL:</label>
+                    <input type="text" id="youtube-url" placeholder="https://www.youtube.com/watch?v=..." style="font-size: 13px;" />
+                </div>
+                <button class="btn" id="download-btn">Download Audio</button>
+                <div id="download-progress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="download-progress-fill">0%</div>
+                    </div>
+                    <p class="info-message" id="download-status">Aan het downloaden...</p>
+                </div>
+            </div>
+
+            <!-- Upload Section -->
+            <div id="upload-section" style="display: none;">
+                <div class="form-group">
+                    <label for="audio-file">Upload audio bestand:</label>
+                    <input type="file" id="audio-file" accept=".mp3,.wav,.ogg,.m4a,.flac" style="font-size: 13px;" />
+                    <p style="color: #888; font-size: 12px; margin-top: 6px;">Ondersteunde formaten: MP3, WAV, OGG, M4A, FLAC</p>
+                </div>
+                <button class="btn" id="upload-btn">Upload Audio</button>
+                <div id="upload-progress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="upload-progress-fill">0%</div>
+                    </div>
+                    <p class="info-message" id="upload-status">Aan het uploaden...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Audio Preview & Trim -->
+        <div class="studio-step disabled" id="step-preview">
+            <h2>Stap 2: Audio Preview & Trim</h2>
+            <div id="audio-info"></div>
+
+            <div class="waveform-container" id="waveform-container" style="display: none;">
+                <h3 style="color: #fff; margin-bottom: 15px; font-size: 14px;">Selecteer het deel dat je wilt gebruiken</h3>
+                <div id="waveform"></div>
+                <div class="waveform-controls">
+                    <button id="play-pause-btn">Play</button>
+                    <button id="stop-btn" class="secondary">Stop</button>
+                    <button id="select-all-btn" class="secondary">Alles selecteren</button>
+                    <button id="clear-region-btn" class="secondary">Wis selectie</button>
+                </div>
+                <div class="trim-info" id="trim-info">
+                    <strong>Tip:</strong> Sleep met je muis over de waveform om een fragment te selecteren.<br>
+                    <strong>Selectie:</strong>
+                    Start: <span id="region-start">0.0</span>s |
+                    End: <span id="region-end">0.0</span>s |
+                    Duur: <span id="region-duration">0.0</span>s
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Effects -->
+        <div class="studio-step disabled" id="step-effects">
+            <h2>Stap 3: Audio Effecten</h2>
+            <div style="margin-bottom: 15px;">
+                <button id="preview-effects-btn" class="btn-secondary" style="background: #FF9800; border: none;">Preview met effecten</button>
+                <span id="effects-status" style="margin-left: 10px; color: #888;"></span>
+            </div>
+            <div class="effects-grid">
+                <div class="effect-control">
+                    <label>Echo/Delay</label>
+                    <select id="echo-type" style="width: 100%; padding: 8px; background: rgba(255, 255, 255, 0.9); border: 1px solid rgba(0, 0, 0, 0.2); border-radius: 6px; color: #1a1a1a;">
+                        <option value="none">Geen</option>
+                        <option value="short">Kort (snelle herhaling)</option>
+                        <option value="medium">Normaal</option>
+                        <option value="long">Lang (trage herhaling)</option>
+                    </select>
+                </div>
+                <div class="effect-control">
+                    <label>Distortion <span class="range-value" id="distortion-value">0</span>%</label>
+                    <input type="range" id="distortion-level" min="0" max="100" step="10" value="0" />
+                </div>
+                <div class="effect-control">
+                    <label>Reverb</label>
+                    <select id="reverb-type" style="width: 100%; padding: 8px; background: #444; color: #fff; border: none; border-radius: 4px;">
+                        <option value="none">Geen</option>
+                        <option value="small">Kleine ruimte</option>
+                        <option value="large">Grote hal</option>
+                    </select>
+                </div>
+                <div class="effect-control">
+                    <label>Bass Boost <span class="range-value" id="bass-value">0</span> dB</label>
+                    <input type="range" id="bass-boost" min="-12" max="12" step="1" value="0" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: Save -->
+        <div class="studio-step disabled" id="step-save">
+            <h2>Stap 4: Opslaan</h2>
+            <div class="form-group">
+                <label for="sound-title">Titel:</label>
+                <input type="text" id="sound-title" placeholder="Geef je sound een naam" style="font-size: 13px;" />
+            </div>
+            <div class="form-group">
+                <label for="sound-tags">Tags (optioneel):</label>
+                <input type="text" id="sound-tags" placeholder="bijv. funny, music, meme" style="font-size: 13px;" />
+            </div>
+            <div class="form-group">
+                <label>Afbeelding:</label>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="image-thumbnail" name="image-choice" value="thumbnail" checked>
+                        <label for="image-thumbnail" class="radio-label">
+                            YouTube Thumbnail
+                        </label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="image-upload" name="image-choice" value="upload">
+                        <label for="image-upload" class="radio-label">
+                            Eigen afbeelding
+                        </label>
+                    </div>
+                </div>
+                <div id="custom-image-upload" style="display: none; margin-top: 10px;">
+                    <input type="file" id="custom-image" accept=".jpg,.jpeg,.png,.gif" style="margin-bottom: 10px;" />
+                    <div id="image-preview" style="display: none;">
+                        <img id="preview-img" src="" style="max-width: 200px; max-height: 200px; border-radius: 8px; margin-top: 10px;" />
+                    </div>
+                </div>
+            </div>
+            <button class="btn" id="save-btn">Opslaan naar Soundboard</button>
+            <div id="save-status"></div>
+        </div>
+    </div>
+
+    <script>
+        // Toast notification function for studio
+        function showToast(type, title, message, duration = 3000) {
+            const container = document.getElementById('toast-container-studio');
+            if (!container) return;
+
+            const icons = {
+                success: '<i class="fas fa-check-circle"></i>',
+                error: '<i class="fas fa-times-circle"></i>',
+                info: '<i class="fas fa-info-circle"></i>',
+                warning: '<i class="fas fa-exclamation-triangle"></i>'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.style.cssText = `
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 16px 20px;
+                background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                margin-bottom: 12px;
+                min-width: 300px;
+                max-width: 400px;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+            `;
+
+            toast.innerHTML = `
+                <div class="toast-icon" style="font-size: 20px; color: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : type === 'warning' ? '#FF9800' : '#2196F3'};">
+                    ${icons[type] || icons.info}
+                </div>
+                <div class="toast-content" style="flex: 1;">
+                    <div class="toast-title" style="color: #fff; font-weight: 600; font-size: 14px; margin-bottom: 2px;">${title}</div>
+                    ${message ? `<div class="toast-message" style="color: #ccc; font-size: 13px;">${message}</div>` : ''}
+                </div>
+                <button class="toast-close" onclick="this.parentElement.remove()" style="
+                    background: none;
+                    border: none;
+                    color: #888;
+                    cursor: pointer;
+                    font-size: 18px;
+                    padding: 0;
+                    width: 24px;
+                    height: 24px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                ">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateX(0)';
+            }, 10);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+
+
+        const socket = io();
+        let currentSessionId = null;
+        let currentSession = null;
+        let wavesurfer = null;
+        let wsRegions = null;
+        let activeRegion = null;
+        let audioContext = null;
+        let sourceNode = null;
+        let effectsEnabled = false;
+
+        // Source type radio buttons
+        $('input[name="source-type"]').change(function() {
+            if ($(this).val() === 'youtube') {
+                $('#youtube-section').show();
+                $('#upload-section').hide();
+            } else {
+                $('#youtube-section').hide();
+                $('#upload-section').show();
+            }
+        });
+
+        // Range value updates
+        $('#distortion-level').on('input', function() {
+            $('#distortion-value').text($(this).val());
+        });
+        $('#bass-boost').on('input', function() {
+            $('#bass-value').text($(this).val());
+        });
+
+        // Image choice radio buttons
+        $('input[name="image-choice"]').change(function() {
+            if ($(this).val() === 'upload') {
+                $('#custom-image-upload').show();
+            } else {
+                $('#custom-image-upload').hide();
+                $('#image-preview').hide();
+            }
+        });
+
+        // Custom image preview
+        $('#custom-image').change(function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    $('#preview-img').attr('src', event.target.result);
+                    $('#image-preview').show();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Preview effects button - Note: Echo and Distortion require server-side processing
+        // Preview is disabled for these effects
+        $('#preview-effects-btn').click(function() {
+            showToast('info', 'Preview', 'Echo en Distortion kunnen alleen worden gepreviewd na het opslaan', 4000);
+        });
+
+        // Upload button
+        $('#upload-btn').click(function() {
+            const file = $('#audio-file')[0].files[0];
+            if (!file) {
+                showToast('warning', 'Geen bestand', 'Selecteer eerst een audio bestand', 3000);
+                return;
+            }
+
+            $('#upload-btn').prop('disabled', true);
+            $('#upload-progress').show();
+            $('#upload-progress-fill').css('width', '0%').text('0%');
+
+            const formData = new FormData();
+            formData.append('audioFile', file);
+
+            $.ajax({
+                url: '/studio/upload',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                xhr: function() {
+                    const xhr = new window.XMLHttpRequest();
+                    xhr.upload.addEventListener('progress', function(e) {
+                        if (e.lengthComputable) {
+                            const percent = Math.round((e.loaded / e.total) * 100);
+                            $('#upload-progress-fill').css('width', percent + '%').text(percent + '%');
+                        }
+                    }, false);
+                    return xhr;
+                },
+                success: function(data) {
+                    if (data.success) {
+                        currentSessionId = data.sessionId;
+                        currentSession = data.session;
+                        $('#upload-status').html('<strong>✓ Upload voltooid!</strong>');
+                        uploadComplete();
+                    }
+                },
+                error: function(xhr) {
+                    showToast('error', 'Upload fout', xhr.responseJSON?.error || 'Upload mislukt', 3000);
+                    $('#upload-btn').prop('disabled', false);
+                    $('#upload-progress').hide();
+                }
+            });
+        });
+
+        // Download button
+        $('#download-btn').click(function() {
+            const url = $('#youtube-url').val().trim();
+            if (!url) {
+                showToast('warning', 'Geen URL', 'Voer eerst een YouTube URL in', 3000);
+                return;
+            }
+
+            $('#download-btn').prop('disabled', true);
+            $('#download-progress').show();
+            $('#download-progress-fill').css('width', '0%').text('0%');
+
+            $.post('/studio/youtube/download', { youtube_url: url })
+                .done(function(data) {
+                    if (data.success) {
+                        currentSessionId = data.sessionId;
+                        $('#download-status').text('Download gestart...');
+
+                        // Listen for progress
+                        socket.on(`studio:download:${currentSessionId}`, function(progress) {
+                            if (progress.percent) {
+                                $('#download-progress-fill').css('width', progress.percent + '%').text(progress.percent + '%');
+                            }
+                            if (progress.status === 'completed') {
+                                currentSession = progress.session;
+                                downloadComplete();
+                            }
+                            if (progress.status === 'failed') {
+                                showToast('error', 'Download fout', progress.error, 3000);
+                                $('#download-btn').prop('disabled', false);
+                                $('#download-progress').hide();
+                            }
+                        });
+                    }
+                })
+                .fail(function(xhr) {
+                    showToast('error', 'Download fout', xhr.responseJSON?.error || 'Download mislukt', 3000);
+                    $('#download-btn').prop('disabled', false);
+                    $('#download-progress').hide();
+                });
+        });
+
+        function uploadComplete() {
+            $('#step-preview').removeClass('disabled');
+            $('#step-effects').removeClass('disabled');
+            $('#step-save').removeClass('disabled');
+
+            // Set audio info
+            $('#audio-info').html(`
+                <div class="info-message">
+                    <strong>Bestand:</strong> ${currentSession.originalFilename || 'Uploaded file'}<br>
+                    <strong>Duur:</strong> ${currentSession.duration.toFixed(1)}s
+                </div>
+            `);
+
+            // Set title from filename
+            if (currentSession.originalFilename) {
+                const titleWithoutExt = currentSession.originalFilename.replace(/\.[^/.]+$/, '');
+                $('#sound-title').val(titleWithoutExt.substring(0, 50));
+            }
+
+            // Show waveform container
+            $('#waveform-container').show();
+
+            // Initialize WaveSurfer
+            initializeWaveSurfer(currentSession.audioUrl, currentSession.duration);
+        }
+
+        function downloadComplete() {
+            $('#download-status').html('<strong>✓ Download voltooid!</strong>');
+            $('#step-preview').removeClass('disabled');
+            $('#step-effects').removeClass('disabled');
+            $('#step-save').removeClass('disabled');
+
+            // Set audio info
+            $('#audio-info').html(`
+                <div class="info-message">
+                    <strong>Titel:</strong> ${currentSession.videoTitle}<br>
+                    <strong>Duur:</strong> ${currentSession.duration.toFixed(1)}s
+                </div>
+            `);
+
+            // Set title from video
+            $('#sound-title').val(currentSession.videoTitle.substring(0, 50));
+
+            // Show waveform container
+            $('#waveform-container').show();
+
+            // Initialize WaveSurfer
+            initializeWaveSurfer(currentSession.audioUrl, currentSession.duration);
+        }
+
+        function initializeWaveSurfer(audioUrl, duration) {
+            console.log('Initializing WaveSurfer with:', audioUrl, duration);
+
+            // Destroy existing instance if any
+            if (wavesurfer) {
+                wavesurfer.destroy();
+            }
+
+            // Create WaveSurfer instance with v6 syntax
+            wavesurfer = WaveSurfer.create({
+                container: '#waveform',
+                waveColor: '#4CAF50',
+                progressColor: '#2E7D32',
+                cursorColor: '#fff',
+                barWidth: 2,
+                barRadius: 3,
+                cursorWidth: 1,
+                height: 128,
+                barGap: 2,
+                plugins: [
+                    WaveSurfer.regions.create({
+                        dragSelection: {
+                            slop: 5
+                        }
+                    })
+                ]
+            });
+
+            // Load the audio
+            wavesurfer.load(audioUrl);
+
+            // When waveform is ready, create initial region (full audio)
+            wavesurfer.on('ready', function() {
+                console.log('WaveSurfer ready, duration:', wavesurfer.getDuration());
+
+                // Create initial region for full audio
+                activeRegion = wavesurfer.addRegion({
+                    start: 0,
+                    end: duration,
+                    color: 'rgba(255, 193, 7, 0.4)', // Gele/oranje kleur voor betere zichtbaarheid
+                    drag: true,
+                    resize: true
+                });
+
+                updateTrimInfo();
+            });
+
+            // Update trim info when region changes
+            wavesurfer.on('region-update-end', function(region) {
+                activeRegion = region;
+                updateTrimInfo();
+            });
+
+            // Handle errors
+            wavesurfer.on('error', function(error) {
+                console.error('WaveSurfer error:', error);
+                showToast('error', 'Audio fout', 'Fout bij laden van audio', 3000);
+            });
+
+            // Handle play/pause button
+            $('#play-pause-btn').off('click').on('click', function() {
+                wavesurfer.playPause();
+                if (wavesurfer.isPlaying()) {
+                    $(this).html('Pause');
+                } else {
+                    $(this).html('Play');
+                }
+            });
+
+            // Handle stop button
+            $('#stop-btn').off('click').on('click', function() {
+                wavesurfer.stop();
+                $('#play-pause-btn').html('Play');
+            });
+
+            // Handle select all button
+            $('#select-all-btn').off('click').on('click', function() {
+                if (activeRegion) {
+                    activeRegion.remove();
+                }
+                activeRegion = wavesurfer.addRegion({
+                    start: 0,
+                    end: wavesurfer.getDuration(),
+                    color: 'rgba(255, 193, 7, 0.4)', // Gele/oranje kleur voor betere zichtbaarheid
+                    drag: true,
+                    resize: true
+                });
+                updateTrimInfo();
+            });
+
+            // Handle clear region button
+            $('#clear-region-btn').off('click').on('click', function() {
+                if (activeRegion) {
+                    activeRegion.remove();
+                    activeRegion = null;
+                    updateTrimInfo();
+                }
+            });
+        }
+
+        function updateTrimInfo() {
+            if (activeRegion) {
+                const start = activeRegion.start.toFixed(2);
+                const end = activeRegion.end.toFixed(2);
+                const duration = (activeRegion.end - activeRegion.start).toFixed(2);
+
+                $('#region-start').text(start);
+                $('#region-end').text(end);
+                $('#region-duration').text(duration);
+            } else {
+                $('#region-start').text('0.0');
+                $('#region-end').text('0.0');
+                $('#region-duration').text('0.0');
+            }
+        }
+
+        // Save button
+        $('#save-btn').click(function() {
+            const title = $('#sound-title').val().trim();
+            if (!title) {
+                showToast('warning', 'Geen titel', 'Voer eerst een titel in', 3000);
+                return;
+            }
+
+            // Get trim values from waveform region
+            let trimStart = 0;
+            let trimEnd = currentSession ? currentSession.duration : 0;
+
+            if (activeRegion) {
+                trimStart = activeRegion.start;
+                trimEnd = activeRegion.end;
+            }
+
+            $('#save-btn').prop('disabled', true).text('Bezig met verwerken...');
+
+            const effects = {
+                echo_type: $('#echo-type').val(),
+                distortion_level: parseInt($('#distortion-level').val()),
+                reverb_type: $('#reverb-type').val(),
+                bass_boost: parseInt($('#bass-boost').val()),
+                trim_start: trimStart,
+                trim_end: trimEnd
+            };
+
+            // Create FormData for image upload
+            const formData = new FormData();
+            formData.append('sessionId', currentSessionId);
+            formData.append('title', title);
+            formData.append('tags', $('#sound-tags').val());
+            formData.append('effects', JSON.stringify(effects));
+
+            // Add image choice
+            const imageChoice = $('input[name="image-choice"]:checked').val();
+            formData.append('imageChoice', imageChoice);
+
+            // Add custom image if selected
+            if (imageChoice === 'upload') {
+                const customImage = $('#custom-image')[0].files[0];
+                if (customImage) {
+                    formData.append('customImage', customImage);
+                }
+            }
+
+            $.ajax({
+                url: '/studio/process',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(data) {
+                    if (data.success) {
+                        $('#save-status').html(`
+                            <div class="success-message">
+                                ✓ Sound opgeslagen! <a href="/" style="color: white; text-decoration: underline;">Ga naar soundboard</a>
+                            </div>
+                        `);
+                        $('#save-btn').text('Opgeslagen!');
+                    }
+                },
+                error: function(xhr) {
+                    showToast('error', 'Opslaan fout', xhr.responseJSON?.error || 'Opslaan mislukt', 3000);
+                    $('#save-btn').prop('disabled', false).text('Opslaan naar Soundboard');
+                }
+            });
+        });
+    </script>
+
+    </div>
+    </div>
+</body>
+</html>

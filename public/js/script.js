@@ -43,6 +43,126 @@ window.showToast = function(type, title, message, duration = 3000) {
 };
 
 // ========================================
+// Confirm Modal System
+// ========================================
+window.showConfirm = function(title, message, onConfirm, onCancel) {
+  // Create modal HTML
+  const modalHTML = `
+    <div class="modal-overlay confirm-modal-overlay" style="
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    ">
+      <div class="confirm-modal" style="
+        background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+        border-radius: 12px;
+        padding: 24px;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transform: scale(0.9);
+        transition: transform 0.3s ease;
+      ">
+        <div class="confirm-header" style="
+          margin-bottom: 16px;
+        ">
+          <h3 style="
+            color: #fff;
+            margin: 0;
+            font-size: 20px;
+            font-family: 'Mina', sans-serif;
+          ">${title}</h3>
+        </div>
+        <div class="confirm-body" style="
+          margin-bottom: 24px;
+          color: #ccc;
+          font-size: 15px;
+          line-height: 1.5;
+        ">
+          ${message}
+        </div>
+        <div class="confirm-footer" style="
+          display: flex;
+          gap: 12px;
+          justify-content: flex-end;
+        ">
+          <button class="confirm-cancel-btn" style="
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: #fff;
+            cursor: pointer;
+            font-family: 'Mina', sans-serif;
+            font-size: 14px;
+            transition: all 0.2s ease;
+          ">Annuleren</button>
+          <button class="confirm-confirm-btn" style="
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            cursor: pointer;
+            font-family: 'Mina', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+          ">Verwijderen</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Add to body
+  const modalElement = $(modalHTML).appendTo('body');
+  const overlay = modalElement[0];
+  const modal = modalElement.find('.confirm-modal')[0];
+
+  // Show animation
+  setTimeout(() => {
+    overlay.style.opacity = '1';
+    modal.style.transform = 'scale(1)';
+  }, 10);
+
+  // Handle confirm
+  modalElement.find('.confirm-confirm-btn').on('click', function() {
+    closeModal();
+    if (onConfirm) onConfirm();
+  });
+
+  // Handle cancel
+  modalElement.find('.confirm-cancel-btn').on('click', function() {
+    closeModal();
+    if (onCancel) onCancel();
+  });
+
+  // Close on overlay click
+  modalElement.on('click', function(e) {
+    if (e.target === overlay) {
+      closeModal();
+      if (onCancel) onCancel();
+    }
+  });
+
+  function closeModal() {
+    overlay.style.opacity = '0';
+    modal.style.transform = 'scale(0.9)';
+    setTimeout(() => modalElement.remove(), 300);
+  }
+};
+
+// ========================================
 // Welcome Modal System
 // ========================================
 window.showWelcomeModal = function() {
@@ -1019,11 +1139,16 @@ $(document).ready(function () {
     const groupId = $(this).data('group-id');
     const group = GroupsHelper.getGroup(groupId);
 
-    if (confirm(`Weet je zeker dat je "${group.name}" wilt verwijderen?`)) {
-      GroupsHelper.deleteGroup(groupId);
-      renderGroups();
-      // showToast('info', 'Verwijderd', 'Groep verwijderd', 2000);
-    }
+    showConfirm(
+      'Groep verwijderen',
+      `Weet je zeker dat je "${group.name}" wilt verwijderen?`,
+      function() {
+        // On confirm
+        GroupsHelper.deleteGroup(groupId);
+        renderGroups();
+        showToast('success', 'Verwijderd', 'Groep succesvol verwijderd', 2000);
+      }
+    );
   });
 
   // Event: Remove sound from group (timeline version)

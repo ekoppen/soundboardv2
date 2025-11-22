@@ -66,3 +66,4 @@ public/uploads/images/*
 # OS
 .DS_Store
 Thumbs.db
+public/uploads/temp/
