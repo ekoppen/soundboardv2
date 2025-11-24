@@ -1007,12 +1007,9 @@ $(document).ready(function () {
     let draggedItem = null;
     let startX = 0;
     let startLeft = 0;
+    let isDragging = false;
     const pixelsPerSecond = 50;
-
-    // Helper to get X coordinate from mouse or touch event
-    function getEventX(e) {
-      return e.touches ? e.touches[0].pageX : e.pageX;
-    }
+    const DRAG_THRESHOLD = 5;
 
     // Start drag - mouse
     $(groupSoundsEl).on('mousedown', '.timeline-sound-item', function(e) {
@@ -1024,6 +1021,7 @@ $(document).ready(function () {
       draggedItem = $(this);
       startX = e.pageX;
       startLeft = parseInt(draggedItem.css('left')) || 0;
+      isDragging = true;
 
       draggedItem.addClass('dragging-timeline');
       e.preventDefault();
@@ -1039,9 +1037,7 @@ $(document).ready(function () {
       draggedItem = $(this);
       startX = e.touches[0].pageX;
       startLeft = parseInt(draggedItem.css('left')) || 0;
-
-      draggedItem.addClass('dragging-timeline');
-      e.preventDefault();
+      isDragging = false; // Wait for movement threshold
     });
 
     // Move - mouse
@@ -1065,19 +1061,29 @@ $(document).ready(function () {
     $(document).on('touchmove.timeline-drag', function(e) {
       if (!draggedItem) return;
 
-      const deltaX = e.touches[0].pageX - startX;
-      let newLeft = startLeft + deltaX;
+      const touch = e.touches[0];
+      const deltaX = touch.pageX - startX;
 
-      // Don't allow negative positioning
-      if (newLeft < 0) newLeft = 0;
+      // Check if we've moved enough to start dragging
+      if (!isDragging && Math.abs(deltaX) > DRAG_THRESHOLD) {
+        isDragging = true;
+        draggedItem.addClass('dragging-timeline');
+      }
 
-      draggedItem.css('left', newLeft + 'px');
+      if (isDragging) {
+        e.preventDefault(); // Only prevent default once we're dragging
 
-      // Check for overlaps and update visual feedback
-      const overlaps = checkOverlaps(groupId, draggedItem);
-      updateOverlapFeedback(groupSoundsEl, overlaps, draggedItem);
+        let newLeft = startLeft + deltaX;
 
-      e.preventDefault();
+        // Don't allow negative positioning
+        if (newLeft < 0) newLeft = 0;
+
+        draggedItem.css('left', newLeft + 'px');
+
+        // Check for overlaps and update visual feedback
+        const overlaps = checkOverlaps(groupId, draggedItem);
+        updateOverlapFeedback(groupSoundsEl, overlaps, draggedItem);
+      }
     });
 
     // End drag - mouse
@@ -1192,7 +1198,10 @@ $(document).ready(function () {
   // Make cards draggable to groups (mouse + touch support)
   function makeCardsDraggable() {
     let touchDraggedCard = null;
+    let touchStartX = 0;
     let touchStartY = 0;
+    let isDragging = false;
+    const DRAG_THRESHOLD = 10; // pixels to move before considering it a drag
 
     $('.card').each(function() {
       const card = this;
@@ -1210,54 +1219,78 @@ $(document).ready(function () {
 
       // Touch drag events
       card.addEventListener('touchstart', function(e) {
+        // Store initial touch position
         touchDraggedCard = $(this);
+        touchStartX = e.touches[0].pageX;
         touchStartY = e.touches[0].pageY;
-        touchDraggedCard.css('opacity', '0.5');
-        touchDraggedCard.addClass('touch-dragging');
-      }, { passive: true });
+        isDragging = false;
+      }, { passive: false });
 
       card.addEventListener('touchmove', function(e) {
         if (!touchDraggedCard) return;
 
-        // Check if we're over a group drop zone
         const touch = e.touches[0];
-        const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+        const deltaX = Math.abs(touch.pageX - touchStartX);
+        const deltaY = Math.abs(touch.pageY - touchStartY);
 
-        // Remove all drag-over classes first
-        $('.group-sounds').removeClass('drag-over');
-
-        // Add drag-over to the group we're hovering over
-        const groupSounds = $(elementBelow).closest('.group-sounds');
-        if (groupSounds.length > 0) {
-          groupSounds.addClass('drag-over');
+        // Check if we've moved enough to be considered dragging
+        if (!isDragging && (deltaX > DRAG_THRESHOLD || deltaY > DRAG_THRESHOLD)) {
+          isDragging = true;
+          touchDraggedCard.css('opacity', '0.5');
+          touchDraggedCard.addClass('touch-dragging');
         }
-      }, { passive: true });
+
+        if (isDragging) {
+          // Prevent scrolling while dragging
+          e.preventDefault();
+
+          // Check if we're over a group drop zone
+          const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+
+          // Remove all drag-over classes first
+          $('.group-sounds').removeClass('drag-over');
+
+          // Add drag-over to the group we're hovering over
+          if (elementBelow) {
+            const groupSounds = $(elementBelow).closest('.group-sounds');
+            if (groupSounds.length > 0) {
+              groupSounds.addClass('drag-over');
+            }
+          }
+        }
+      }, { passive: false });
 
       card.addEventListener('touchend', function(e) {
         if (!touchDraggedCard) return;
 
-        const touch = e.changedTouches[0];
-        const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-        const groupSounds = $(elementBelow).closest('.group-sounds');
+        if (isDragging) {
+          const touch = e.changedTouches[0];
+          const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
 
-        if (groupSounds.length > 0) {
-          // Dropped on a group - add the sound
-          const groupId = groupSounds.data('group-id');
-          const soundId = touchDraggedCard.attr('id');
+          if (elementBelow) {
+            const groupSounds = $(elementBelow).closest('.group-sounds');
 
-          // Get sound data from the card
-          const audioEl = $('audio#' + soundId);
-          const soundData = {
-            id: soundId,
-            title: audioEl.attr('title'),
-            audioFile: audioEl.attr('data-sound-file'),
-            duration: audioEl.attr('sound_length'),
-            waveformData: audioEl.attr('data-waveform') || '[]'
-          };
+            if (groupSounds.length > 0) {
+              // Dropped on a group - add the sound
+              const groupId = groupSounds.data('group-id');
+              const soundId = touchDraggedCard.attr('id');
 
-          // Add to group
-          GroupsHelper.addSound(groupId, soundData);
-          renderGroups();
+              // Get sound data from the card
+              const audioEl = $('audio#' + soundId);
+              const soundData = {
+                id: soundId,
+                title: audioEl.attr('title'),
+                audioFile: audioEl.attr('data-sound-file'),
+                duration: audioEl.attr('sound_length'),
+                waveformData: audioEl.attr('data-waveform') || '[]'
+              };
+
+              // Add to group
+              GroupsHelper.addSound(groupId, soundData);
+              renderGroups();
+              showToast('success', 'Toegevoegd', `"${soundData.title}" toegevoegd aan groep`, 2000);
+            }
+          }
         }
 
         // Cleanup
@@ -1265,7 +1298,19 @@ $(document).ready(function () {
         touchDraggedCard.removeClass('touch-dragging');
         $('.group-sounds').removeClass('drag-over');
         touchDraggedCard = null;
-      }, { passive: true });
+        isDragging = false;
+      }, { passive: false });
+
+      card.addEventListener('touchcancel', function(e) {
+        // Cleanup on cancel
+        if (touchDraggedCard) {
+          touchDraggedCard.css('opacity', '1');
+          touchDraggedCard.removeClass('touch-dragging');
+          $('.group-sounds').removeClass('drag-over');
+          touchDraggedCard = null;
+          isDragging = false;
+        }
+      });
     });
   }
 
