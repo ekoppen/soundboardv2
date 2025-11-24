@@ -136,15 +136,24 @@ window.showConfirm = function(title, message, onConfirm, onCancel) {
   }, 10);
 
   // Handle confirm
-  modalElement.find('.confirm-confirm-btn').on('click', function() {
+  modalElement.find('.confirm-confirm-btn').on('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
     closeModal();
     if (onConfirm) onConfirm();
   });
 
   // Handle cancel
-  modalElement.find('.confirm-cancel-btn').on('click', function() {
+  modalElement.find('.confirm-cancel-btn').on('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
     closeModal();
     if (onCancel) onCancel();
+  });
+
+  // Prevent clicks on modal from propagating
+  modalElement.find('.confirm-modal').on('click', function(e) {
+    e.stopPropagation();
   });
 
   // Close on overlay click
