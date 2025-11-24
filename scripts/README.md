@@ -4,7 +4,7 @@ Utility scripts voor het beheren en migreren van soundboard data.
 
 ## Waveform Generation Script
 
-Genereert waveform data voor bestaande sounds die dit nog niet hebben.
+Genereert waveform data en repareert ontbrekende duration voor bestaande sounds.
 
 ### Gebruik
 
@@ -21,18 +21,27 @@ node scripts/generate-waveforms.js
 ### Wat doet het script?
 
 1. Maakt verbinding met MongoDB
-2. Zoekt alle sounds zonder `waveform_data`
-3. Genereert voor elke sound 1000 waveform samples
-4. Slaat de waveform data op in de database
+2. Zoekt alle sounds met ontbrekende data:
+   - Sounds zonder `waveform_data`
+   - Sounds zonder `sound_length` (duration)
+   - Sounds met ongeldige duration (`0:00` of leeg)
+3. Voor elke sound:
+   - Genereert waveform (1000 samples) indien ontbreekt
+   - Extraheert audio duration uit bestand indien ontbreekt
+   - Formateert duration naar `MM:SS` formaat
+4. Slaat alle updates op in de database
 
 ### Features
 
-- ✅ Batch processing (10 sounds per batch)
-- ✅ Dry run mode voor testen
-- ✅ Gedetailleerde progress logging met kleuren
-- ✅ Error handling en rapportage
-- ✅ Automatische audio file detection
-- ✅ Alleen actieve sounds (`active: 1`)
+- ✅ **Dual repair**: Waveform én duration in één run
+- ✅ **Smart detection**: Vindt alle sounds met ontbrekende data
+- ✅ **Batch processing**: 10 sounds per batch
+- ✅ **Dry run mode**: Test zonder opslaan
+- ✅ **Detailed logging**: Progress met kleuren en emoji's
+- ✅ **Error handling**: Graceful failures met rapportage
+- ✅ **Auto file detection**: Zoekt in meerdere directories
+- ✅ **Active only**: Alleen actieve sounds (`active: 1`)
+- ✅ **FFmpeg metadata**: Accurate duration extraction
 
 ### Output
 
@@ -46,12 +55,12 @@ Het script toont tijdens het draaien:
 ℹ Connecting to MongoDB...
 ✓ Connected to MongoDB
 
-ℹ Searching for sounds without waveform data...
-ℹ Found 45 sounds without waveform data
+ℹ Searching for sounds with missing data...
+ℹ Found 45 sounds needing updates
 
 ℹ Processing batch 1/5 (10 sounds)
-→ Generating waveform for: Sound Title 1
-✓ Updated: Sound Title 1 (1000 samples)
+→ Processing: Sound Title 1
+✓ Updated Sound Title 1: duration: 0:05, waveform: 1000 samples
 ...
 
 ╔════════════════════════════════════════════╗

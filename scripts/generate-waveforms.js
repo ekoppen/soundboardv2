@@ -65,7 +65,7 @@ function audioFileExists(audioFile) {
 }
 
 /**
- * Process a single sound and generate waveform
+ * Process a single sound and generate waveform + duration
  */
 async function processSoundWaveform(sound) {
   try {
@@ -76,29 +76,58 @@ async function processSoundWaveform(sound) {
       return { success: false, reason: 'file_not_found' };
     }
 
-    log.debug(`Generating waveform for: ${sound.title}`);
+    log.debug(`Processing: ${sound.title}`);
 
-    // Generate waveform peaks
-    const peaks = await audioProcessor.extractWaveformPeaks(audioPath, SAMPLES_PER_WAVEFORM);
+    let updated = false;
+    const updates = [];
 
-    if (!peaks || peaks.length === 0) {
-      log.warning(`Failed to generate waveform for: ${sound.title}`);
-      return { success: false, reason: 'generation_failed' };
+    // Check if duration/sound_length is missing or invalid
+    if (!sound.sound_length || sound.sound_length === '0:00' || sound.sound_length === '') {
+      try {
+        // Get audio metadata including duration
+        const metadata = await audioProcessor.getAudioMetadata(audioPath);
+
+        if (metadata && metadata.duration) {
+          const formattedDuration = audioProcessor.formatDuration(metadata.duration);
+          sound.sound_length = formattedDuration;
+          updates.push(`duration: ${formattedDuration}`);
+          updated = true;
+        }
+      } catch (metadataError) {
+        log.warning(`Could not extract duration for ${sound.title}: ${metadataError.message}`);
+      }
     }
 
-    // Convert to JSON string for storage
-    const waveformData = JSON.stringify(peaks);
+    // Generate waveform peaks if missing
+    if (!sound.waveform_data || sound.waveform_data === '' || sound.waveform_data === '[]') {
+      try {
+        const peaks = await audioProcessor.extractWaveformPeaks(audioPath, SAMPLES_PER_WAVEFORM);
 
-    if (!DRY_RUN) {
-      // Update sound in database
-      sound.waveform_data = waveformData;
+        if (peaks && peaks.length > 0) {
+          const waveformData = JSON.stringify(peaks);
+          sound.waveform_data = waveformData;
+          updates.push(`waveform: ${peaks.length} samples`);
+          updated = true;
+        } else {
+          log.warning(`Failed to generate waveform for: ${sound.title}`);
+        }
+      } catch (waveformError) {
+        log.warning(`Could not generate waveform for ${sound.title}: ${waveformError.message}`);
+      }
+    }
+
+    // Save if any updates were made
+    if (updated && !DRY_RUN) {
       await sound.save();
-      log.success(`Updated: ${sound.title} (${peaks.length} samples)`);
+      log.success(`Updated ${sound.title}: ${updates.join(', ')}`);
+    } else if (updated && DRY_RUN) {
+      log.info(`[DRY RUN] Would update ${sound.title}: ${updates.join(', ')}`);
     } else {
-      log.info(`[DRY RUN] Would update: ${sound.title} (${peaks.length} samples)`);
+      log.debug(`No updates needed for: ${sound.title}`);
+      return { success: false, reason: 'no_updates_needed' };
     }
 
-    return { success: true, samples: peaks.length };
+    return { success: true, updates: updates.length };
 
   } catch (error) {
     log.error(`Error processing ${sound.title}: ${error.message}`);
@@ -125,6 +154,9 @@ async function processBatch(sounds, batchNumber, totalBatches) {
     if (result.success) {
       results.success++;
     } else if (result.reason === 'file_not_found') {
+      results.skipped++;
+    } else if (result.reason === 'no_updates_needed') {
+      // Sound already has all data, skip silently
       results.skipped++;
     } else {
       results.failed++;
@@ -160,28 +192,35 @@ async function migrate() {
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/soundboard');
     log.success('Connected to MongoDB\n');
 
-    // Find sounds without waveform data
-    log.info('Searching for sounds without waveform data...');
-    const soundsWithoutWaveform = await Sound.find({
+    // Find sounds with missing waveform data or duration
+    log.info('Searching for sounds with missing data...');
+    const soundsNeedingUpdate = await Sound.find({
       $or: [
+        // Missing waveform
         { waveform_data: { $exists: false } },
         { waveform_data: null },
-        { waveform_data: '' }
+        { waveform_data: '' },
+        { waveform_data: '[]' },
+        // Missing or invalid duration
+        { sound_length: { $exists: false } },
+        { sound_length: null },
+        { sound_length: '' },
+        { sound_length: '0:00' }
       ],
       active: 1 // Only process active sounds
     });
 
-    if (soundsWithoutWaveform.length === 0) {
-      log.success('All sounds already have waveform data!');
+    if (soundsNeedingUpdate.length === 0) {
+      log.success('All sounds have complete data!');
       return;
     }
 
-    log.info(`Found ${soundsWithoutWaveform.length} sounds without waveform data\n`);
+    log.info(`Found ${soundsNeedingUpdate.length} sounds needing updates\n`);
 
     // Process in batches
     const batches = [];
-    for (let i = 0; i < soundsWithoutWaveform.length; i += BATCH_SIZE) {
-      batches.push(soundsWithoutWaveform.slice(i, i + BATCH_SIZE));
+    for (let i = 0; i < soundsNeedingUpdate.length; i += BATCH_SIZE) {
+      batches.push(soundsNeedingUpdate.slice(i, i + BATCH_SIZE));
     }
 
     const totalResults = {
