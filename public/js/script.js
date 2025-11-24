@@ -61,6 +61,7 @@ window.showConfirm = function(title, message, onConfirm, onCancel) {
       z-index: 10000;
       opacity: 0;
       transition: opacity 0.3s ease;
+      pointer-events: all;
     ">
       <div class="confirm-modal" style="
         background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
@@ -72,6 +73,7 @@ window.showConfirm = function(title, message, onConfirm, onCancel) {
         border: 1px solid rgba(255, 255, 255, 0.1);
         transform: scale(0.9);
         transition: transform 0.3s ease;
+        pointer-events: all;
       ">
         <div class="confirm-header" style="
           margin-bottom: 16px;
@@ -106,6 +108,9 @@ window.showConfirm = function(title, message, onConfirm, onCancel) {
             font-family: 'Mina', sans-serif;
             font-size: 14px;
             transition: all 0.2s ease;
+            pointer-events: all;
+            position: relative;
+            z-index: 10001;
           ">Annuleren</button>
           <button class="confirm-confirm-btn" style="
             padding: 10px 20px;
@@ -118,6 +123,9 @@ window.showConfirm = function(title, message, onConfirm, onCancel) {
             font-size: 14px;
             font-weight: 600;
             transition: all 0.2s ease;
+            pointer-events: all;
+            position: relative;
+            z-index: 10001;
           ">Verwijderen</button>
         </div>
       </div>
