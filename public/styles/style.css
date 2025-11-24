@@ -898,7 +898,8 @@ body {
   align-items: center;
   height: 50px;
   min-width: 180px;
-  overflow: hidden;
+  overflow: visible;
+  margin-right: 15px;
 }
 
 .online-counter p {
