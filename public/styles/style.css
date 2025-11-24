@@ -1923,6 +1923,27 @@ main {
   transition: none; /* Disable transitions during drag */
 }
 
+/* Touch-specific styles */
+.card.touch-dragging {
+  opacity: 0.5;
+  transform: scale(1.05);
+  z-index: 1000;
+  transition: transform 0.2s ease;
+}
+
+/* Improve touch targets */
+.timeline-sound-item {
+  touch-action: none; /* Disable browser touch handling */
+}
+
+.sound-remove-btn {
+  min-width: 44px;
+  min-height: 44px; /* iOS recommended touch target size */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .timeline-sound-item.playing {
   border-color: var(--secondary-color);
   box-shadow: 0 0 20px rgba(235, 87, 51, 0.6);

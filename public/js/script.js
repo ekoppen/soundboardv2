@@ -1002,13 +1002,19 @@ $(document).ready(function () {
     }
   }
 
-  // Initialize horizontal drag for timeline items
+  // Initialize horizontal drag for timeline items (mouse + touch support)
   function initializeTimelineDrag(groupId, groupSoundsEl) {
     let draggedItem = null;
     let startX = 0;
     let startLeft = 0;
     const pixelsPerSecond = 50;
 
+    // Helper to get X coordinate from mouse or touch event
+    function getEventX(e) {
+      return e.touches ? e.touches[0].pageX : e.pageX;
+    }
+
+    // Start drag - mouse
     $(groupSoundsEl).on('mousedown', '.timeline-sound-item', function(e) {
       // Don't start drag on remove button or resize handles
       if ($(e.target).closest('.sound-remove-btn, .sound-resize-handle-left, .sound-resize-handle-right').length > 0) {
@@ -1023,6 +1029,22 @@ $(document).ready(function () {
       e.preventDefault();
     });
 
+    // Start drag - touch
+    $(groupSoundsEl).on('touchstart', '.timeline-sound-item', function(e) {
+      // Don't start drag on remove button or resize handles
+      if ($(e.target).closest('.sound-remove-btn, .sound-resize-handle-left, .sound-resize-handle-right').length > 0) {
+        return;
+      }
+
+      draggedItem = $(this);
+      startX = e.touches[0].pageX;
+      startLeft = parseInt(draggedItem.css('left')) || 0;
+
+      draggedItem.addClass('dragging-timeline');
+      e.preventDefault();
+    });
+
+    // Move - mouse
     $(document).on('mousemove.timeline-drag', function(e) {
       if (!draggedItem) return;
 
@@ -1039,7 +1061,50 @@ $(document).ready(function () {
       updateOverlapFeedback(groupSoundsEl, overlaps, draggedItem);
     });
 
+    // Move - touch
+    $(document).on('touchmove.timeline-drag', function(e) {
+      if (!draggedItem) return;
+
+      const deltaX = e.touches[0].pageX - startX;
+      let newLeft = startLeft + deltaX;
+
+      // Don't allow negative positioning
+      if (newLeft < 0) newLeft = 0;
+
+      draggedItem.css('left', newLeft + 'px');
+
+      // Check for overlaps and update visual feedback
+      const overlaps = checkOverlaps(groupId, draggedItem);
+      updateOverlapFeedback(groupSoundsEl, overlaps, draggedItem);
+
+      e.preventDefault();
+    });
+
+    // End drag - mouse
     $(document).on('mouseup.timeline-drag', function(e) {
+      if (!draggedItem) return;
+
+      draggedItem.removeClass('dragging-timeline');
+
+      // Calculate new start time from position
+      const newLeft = parseInt(draggedItem.css('left')) || 0;
+      const newStartTime = newLeft / pixelsPerSecond;
+      const instanceId = draggedItem.data('instance-id');
+
+      // Check for final overlaps
+      const overlaps = checkOverlaps(groupId, draggedItem);
+
+      // Update in storage
+      GroupsHelper.updateSoundPosition(groupId, instanceId, newStartTime);
+
+      // Clear overlap feedback
+      updateOverlapFeedback(groupSoundsEl, [], draggedItem);
+
+      draggedItem = null;
+    });
+
+    // End drag - touch
+    $(document).on('touchend.timeline-drag', function(e) {
       if (!draggedItem) return;
 
       draggedItem.removeClass('dragging-timeline');
@@ -1124,12 +1189,16 @@ $(document).ready(function () {
     });
   }
 
-  // Make cards draggable to groups
+  // Make cards draggable to groups (mouse + touch support)
   function makeCardsDraggable() {
+    let touchDraggedCard = null;
+    let touchStartY = 0;
+
     $('.card').each(function() {
       const card = this;
       card.setAttribute('draggable', 'true');
 
+      // Mouse drag events
       card.addEventListener('dragstart', function(e) {
         e.dataTransfer.setData('soundId', $(this).attr('id'));
         $(this).css('opacity', '0.5');
@@ -1138,6 +1207,65 @@ $(document).ready(function () {
       card.addEventListener('dragend', function(e) {
         $(this).css('opacity', '1');
       });
+
+      // Touch drag events
+      card.addEventListener('touchstart', function(e) {
+        touchDraggedCard = $(this);
+        touchStartY = e.touches[0].pageY;
+        touchDraggedCard.css('opacity', '0.5');
+        touchDraggedCard.addClass('touch-dragging');
+      }, { passive: true });
+
+      card.addEventListener('touchmove', function(e) {
+        if (!touchDraggedCard) return;
+
+        // Check if we're over a group drop zone
+        const touch = e.touches[0];
+        const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+
+        // Remove all drag-over classes first
+        $('.group-sounds').removeClass('drag-over');
+
+        // Add drag-over to the group we're hovering over
+        const groupSounds = $(elementBelow).closest('.group-sounds');
+        if (groupSounds.length > 0) {
+          groupSounds.addClass('drag-over');
+        }
+      }, { passive: true });
+
+      card.addEventListener('touchend', function(e) {
+        if (!touchDraggedCard) return;
+
+        const touch = e.changedTouches[0];
+        const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+        const groupSounds = $(elementBelow).closest('.group-sounds');
+
+        if (groupSounds.length > 0) {
+          // Dropped on a group - add the sound
+          const groupId = groupSounds.data('group-id');
+          const soundId = touchDraggedCard.attr('id');
+
+          // Get sound data from the card
+          const audioEl = $('audio#' + soundId);
+          const soundData = {
+            id: soundId,
+            title: audioEl.attr('title'),
+            audioFile: audioEl.attr('data-sound-file'),
+            duration: audioEl.attr('sound_length'),
+            waveformData: audioEl.attr('data-waveform') || '[]'
+          };
+
+          // Add to group
+          GroupsHelper.addSound(groupId, soundData);
+          renderGroups();
+        }
+
+        // Cleanup
+        touchDraggedCard.css('opacity', '1');
+        touchDraggedCard.removeClass('touch-dragging');
+        $('.group-sounds').removeClass('drag-over');
+        touchDraggedCard = null;
+      }, { passive: true });
     });
   }
 
