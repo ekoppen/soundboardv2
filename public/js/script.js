@@ -1239,10 +1239,8 @@ $(document).ready(function () {
         touchStartX = e.touches[0].pageX;
         touchStartY = e.touches[0].pageY;
         isDragging = false;
-
-        // Prevent context menu
-        e.preventDefault();
-      }, { passive: false });
+        // Don't preventDefault yet - let normal scrolling work until we detect drag
+      }, { passive: true });
 
       card.addEventListener('touchmove', function(e) {
         if (!touchDraggedCard) return;
@@ -1293,20 +1291,34 @@ $(document).ready(function () {
               const groupId = groupSounds.data('group-id');
               const soundId = touchDraggedCard.attr('id');
 
-              // Get sound data from the card
-              const audioEl = $('audio#' + soundId);
+              // Get sound data from card (same as mouse drop handler)
+              let audio = $(`audio#${soundId}`);
+              if (audio.length === 0) {
+                audio = $(`audio[id="${soundId}"]`);
+              }
+
+              const waveformAttr = audio.attr('waveform_data');
+              let waveformData = null;
+              if (waveformAttr && waveformAttr !== '[]' && waveformAttr.length > 2) {
+                waveformData = waveformAttr;
+              }
+
               const soundData = {
                 id: soundId,
-                title: audioEl.attr('title'),
-                audioFile: audioEl.attr('data-sound-file'),
-                duration: audioEl.attr('sound_length'),
-                waveformData: audioEl.attr('data-waveform') || '[]'
+                title: touchDraggedCard.find('.sound-title').text().trim(),
+                audioFile: audio.attr('data-sound-file'),
+                duration: touchDraggedCard.find('.sound-timer').text().trim(),
+                waveformData: waveformData
               };
 
               // Add to group
               GroupsHelper.addSound(groupId, soundData);
               renderGroups();
-              showToast('success', 'Toegevoegd', `"${soundData.title}" toegevoegd aan groep`, 2000);
+
+              // Only show toast if we have a title
+              if (soundData.title) {
+                showToast('success', 'Toegevoegd', `"${soundData.title}" toegevoegd aan groep`, 2000);
+              }
             }
           }
         }
