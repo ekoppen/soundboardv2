@@ -1027,6 +1027,12 @@ $(document).ready(function () {
       e.preventDefault();
     });
 
+    // Prevent context menu on timeline items
+    $(groupSoundsEl).on('contextmenu', '.timeline-sound-item', function(e) {
+      e.preventDefault();
+      return false;
+    });
+
     // Start drag - touch
     $(groupSoundsEl).on('touchstart', '.timeline-sound-item', function(e) {
       // Don't start drag on remove button or resize handles
@@ -1038,6 +1044,9 @@ $(document).ready(function () {
       startX = e.touches[0].pageX;
       startLeft = parseInt(draggedItem.css('left')) || 0;
       isDragging = false; // Wait for movement threshold
+
+      // Prevent context menu
+      e.preventDefault();
     });
 
     // Move - mouse
@@ -1217,6 +1226,12 @@ $(document).ready(function () {
         $(this).css('opacity', '1');
       });
 
+      // Disable context menu on long press
+      card.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        return false;
+      });
+
       // Touch drag events
       card.addEventListener('touchstart', function(e) {
         // Store initial touch position
@@ -1224,6 +1239,9 @@ $(document).ready(function () {
         touchStartX = e.touches[0].pageX;
         touchStartY = e.touches[0].pageY;
         isDragging = false;
+
+        // Prevent context menu
+        e.preventDefault();
       }, { passive: false });
 
       card.addEventListener('touchmove', function(e) {
