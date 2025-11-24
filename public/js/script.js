@@ -1283,13 +1283,18 @@ $(document).ready(function () {
           const touch = e.changedTouches[0];
           const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
 
+          console.log('Touch end - element below:', elementBelow);
+
           if (elementBelow) {
             const groupSounds = $(elementBelow).closest('.group-sounds');
+            console.log('Group sounds found:', groupSounds.length, groupSounds.data('group-id'));
 
             if (groupSounds.length > 0) {
               // Dropped on a group - add the sound
               const groupId = groupSounds.data('group-id');
               const soundId = touchDraggedCard.attr('id');
+
+              console.log('Adding sound:', soundId, 'to group:', groupId);
 
               // Get sound data - EXACT same as desktop drop handler
               const card = $(`.card#${soundId}`);
@@ -1302,6 +1307,8 @@ $(document).ready(function () {
                   return $(this).attr('id') === soundId;
                 });
               }
+
+              console.log('Audio element found:', audio.length);
 
               const waveformAttr = audio.attr('waveform_data');
               let waveformData = null;
@@ -1318,9 +1325,12 @@ $(document).ready(function () {
                 waveformData: waveformData
               };
 
+              console.log('Sound data:', soundData);
+
               // Add to group
               GroupsHelper.addSound(groupId, soundData);
               renderGroups();
+              console.log('Sound added and groups rendered');
               // No toast - same as desktop drop handler
             }
           }
