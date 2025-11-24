@@ -6,9 +6,11 @@ const fs = require('fs');
 // Try to use system FFmpeg first, fallback to @ffmpeg-installer
 try {
   const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
+  const ffprobeInstaller = require('@ffprobe-installer/ffprobe');
   ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+  ffmpeg.setFfprobePath(ffprobeInstaller.path);
 } catch (error) {
-  console.log('Using system FFmpeg');
+  console.log('Using system FFmpeg and FFprobe');
 }
 
 class AudioProcessor {
