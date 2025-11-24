@@ -1291,10 +1291,16 @@ $(document).ready(function () {
               const groupId = groupSounds.data('group-id');
               const soundId = touchDraggedCard.attr('id');
 
-              // Get sound data from card (same as mouse drop handler)
+              // Get sound data - EXACT same as desktop drop handler
+              const card = $(`.card#${soundId}`);
               let audio = $(`audio#${soundId}`);
               if (audio.length === 0) {
                 audio = $(`audio[id="${soundId}"]`);
+              }
+              if (audio.length === 0) {
+                audio = $('audio').filter(function() {
+                  return $(this).attr('id') === soundId;
+                });
               }
 
               const waveformAttr = audio.attr('waveform_data');
@@ -1305,20 +1311,17 @@ $(document).ready(function () {
 
               const soundData = {
                 id: soundId,
-                title: touchDraggedCard.find('.sound-title').text().trim(),
-                audioFile: audio.attr('data-sound-file'),
-                duration: touchDraggedCard.find('.sound-timer').text().trim(),
+                title: card.find('.sound-title').text().trim(),
+                image: card.find('.sound-image img').attr('src').split('/').pop(),
+                duration: card.find('.sound-timer').text().trim(),
+                audioSrc: audio.find('source').attr('src') || $(`audio#${soundId} source`).attr('src'),
                 waveformData: waveformData
               };
 
               // Add to group
               GroupsHelper.addSound(groupId, soundData);
               renderGroups();
-
-              // Only show toast if we have a title
-              if (soundData.title) {
-                showToast('success', 'Toegevoegd', `"${soundData.title}" toegevoegd aan groep`, 2000);
-              }
+              // No toast - same as desktop drop handler
             }
           }
         }
