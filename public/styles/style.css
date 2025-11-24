@@ -1448,6 +1448,35 @@ main {
   .online-counter .counter-text {
     font-size: 0.85em;
   }
+
+  /* Vertical timeline layout on mobile */
+  .group-sounds {
+    min-height: 300px;
+    max-height: 60vh;
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    white-space: normal;
+  }
+
+  .timeline-sound-item {
+    position: relative !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 80px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 10px;
+  }
+
+  .timeline-sound-item .sound-waveform-container {
+    flex: 1;
+    height: 60px;
+  }
 }
 
 .card {
@@ -1940,6 +1969,7 @@ main {
 }
 
 .card {
+  touch-action: pan-y; /* Allow vertical scrolling, prevent horizontal for drag */
   -webkit-touch-callout: none; /* Disable iOS callout on long press */
   -webkit-user-select: none; /* Disable text selection */
   user-select: none;
