@@ -158,6 +158,7 @@ window.showConfirm = function(title, message, onConfirm, onCancel) {
 
   // Close on overlay click
   modalElement.on('click', function(e) {
+    e.stopPropagation(); // Prevent any clicks from reaching elements below
     if (e.target === overlay) {
       closeModal();
       if (onCancel) onCancel();
@@ -1144,7 +1145,9 @@ $(document).ready(function () {
   });
 
   // Event: Delete group
-  $(document).on('click', '.delete-group', function() {
+  $(document).on('click', '.delete-group', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
     const groupId = $(this).data('group-id');
     const group = GroupsHelper.getGroup(groupId);
 
