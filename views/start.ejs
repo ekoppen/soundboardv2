@@ -40,10 +40,8 @@
 
             <div class="logged-in-user"></div>
             <div class="online-counter">
-                <div class="kat"><img src="/img/kat-1.png" /></div>
-                <div class="oog-links"><img src="/img/oog.png"></div>
-                <div class="oog-rechts"><img src="/img/oog.png"></div>
-                <p></p>
+                <i class="fas fa-users"></i>
+                <span class="counter-text"></span>
             </div>
             <div class="selector-menu">
                 <div id="filters" class="button-group filters-button-group sort">
@@ -163,7 +161,7 @@
                 });
                 socket.on("users", function (userCounter) {
                     //console.log(userCounter);
-                    $(".online-counter p").text(userCounter);
+                    $(".online-counter .counter-text").text(userCounter + " online");
                 });
                 socket.on("message", function (data) {
                     //console.log(data);
@@ -187,11 +185,9 @@
                 $.post("/update", { "id": dataIn });
                  $(".card#" + dataIn + " .progress").delay(2000).css(
                        "left",
-                       "-350px");                  
+                       "-350px");
                     $(".card#" + dataIn + " .duration-counter").css("visibility", "hidden");
                     $(".card#" + dataIn + " .sound-timer").css("visibility","visible");
-                    $(".oog-links").animate({right: '83px'});
-                    $(".oog-rechts").animate({right: '68px'});
             }
         
 
