@@ -663,8 +663,19 @@ body {
 }
 
 .group-sounds.drag-over {
-  background: rgba(153, 51, 51, 0.2);
-  box-shadow: inset 0 0 20px rgba(153, 51, 51, 0.3), 0 0 0 2px var(--primary-color);
+  background: rgba(153, 51, 51, 0.3);
+  box-shadow: inset 0 0 30px rgba(153, 51, 51, 0.4), 0 0 0 3px var(--primary-color);
+  border-color: var(--primary-color);
+  animation: pulse-drop-zone 0.8s ease-in-out infinite;
+}
+
+@keyframes pulse-drop-zone {
+  0%, 100% {
+    box-shadow: inset 0 0 30px rgba(153, 51, 51, 0.4), 0 0 0 3px var(--primary-color);
+  }
+  50% {
+    box-shadow: inset 0 0 40px rgba(153, 51, 51, 0.5), 0 0 0 4px var(--primary-color), 0 0 20px rgba(153, 51, 51, 0.3);
+  }
 }
 
 .group-sounds::-webkit-scrollbar {
@@ -1449,33 +1460,62 @@ main {
     font-size: 0.85em;
   }
 
-  /* Vertical timeline layout on mobile */
+  /* Mobile timeline layout - horizontal scroll preserved for drag functionality */
   .group-sounds {
-    min-height: 300px;
-    max-height: 60vh;
-    height: auto;
-    overflow-x: hidden;
-    overflow-y: auto;
-    white-space: normal;
+    min-height: 120px;
+    height: 120px;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    scroll-behavior: smooth;
+    padding: 8px 12px;
   }
 
+  /* Timeline items keep absolute positioning for drag to work */
   .timeline-sound-item {
-    position: relative !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 100% !important;
-    height: auto !important;
-    min-height: 80px;
-    margin-bottom: 10px;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    padding: 10px;
+    height: 100px;
+    min-height: 100px;
+    touch-action: none; /* Critical: disable browser touch handling for drag */
   }
 
-  .timeline-sound-item .sound-waveform-container {
-    flex: 1;
-    height: 60px;
+  .timeline-sound-item .waveform-canvas {
+    height: 100px;
+  }
+
+  .timeline-sound-item .sound-info-overlay {
+    padding: 4px 8px;
+  }
+
+  .timeline-sound-item .sound-title-overlay {
+    font-size: 0.7rem;
+  }
+
+  .timeline-sound-item .sound-duration-overlay {
+    font-size: 0.65rem;
+  }
+
+  /* Larger touch targets for mobile */
+  .timeline-sound-item .sound-remove-btn {
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 14px;
+  }
+
+  /* Hide resize handles on mobile - not practical for touch */
+  .sound-resize-handle-left,
+  .sound-resize-handle-right {
+    display: none;
+  }
+
+  /* Playhead adjustments for mobile */
+  .timeline-playhead {
+    width: 6px;
+  }
+
+  .playhead-line {
+    width: 6px;
   }
 }
 
@@ -1954,10 +1994,17 @@ main {
 
 /* Touch-specific styles */
 .card.touch-dragging {
-  opacity: 0.5;
-  transform: scale(1.05);
-  z-index: 1000;
-  transition: transform 0.2s ease;
+  opacity: 0.4 !important;
+  transform: none !important; /* Don't transform original - clone handles visual feedback */
+  z-index: 1;
+  transition: opacity 0.2s ease;
+}
+
+/* Drag clone that follows finger */
+.card.drag-clone {
+  border: 2px solid var(--primary-color) !important;
+  border-radius: 15px;
+  background-color: #333;
 }
 
 /* Improve touch targets */
@@ -1969,7 +2016,7 @@ main {
 }
 
 .card {
-  touch-action: pan-y; /* Allow vertical scrolling, prevent horizontal for drag */
+  touch-action: manipulation; /* Allow tap and pan, better for drag detection */
   -webkit-touch-callout: none; /* Disable iOS callout on long press */
   -webkit-user-select: none; /* Disable text selection */
   user-select: none;
