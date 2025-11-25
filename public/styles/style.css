@@ -1460,62 +1460,62 @@ main {
     font-size: 0.85em;
   }
 
-  /* Mobile timeline layout - horizontal scroll preserved for drag functionality */
+  /* Mobile timeline layout - compact horizontal fragments */
   .group-sounds {
-    min-height: 120px;
-    height: 120px;
+    min-height: 70px;
+    height: 70px;
     max-height: none;
     overflow-x: auto;
     overflow-y: hidden;
     white-space: nowrap;
-    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
-    padding: 8px 12px;
+    padding: 5px 8px;
   }
 
-  /* Timeline items keep absolute positioning for drag to work */
+  /* Smaller timeline items on mobile */
   .timeline-sound-item {
-    height: 100px;
-    min-height: 100px;
-    touch-action: none; /* Critical: disable browser touch handling for drag */
+    height: 60px;
+    min-height: 60px;
+    touch-action: none;
   }
 
   .timeline-sound-item .waveform-canvas {
-    height: 100px;
+    height: 60px;
   }
 
   .timeline-sound-item .sound-info-overlay {
-    padding: 4px 8px;
+    padding: 2px 6px;
   }
 
   .timeline-sound-item .sound-title-overlay {
-    font-size: 0.7rem;
+    font-size: 0.6rem;
   }
 
   .timeline-sound-item .sound-duration-overlay {
-    font-size: 0.65rem;
+    font-size: 0.55rem;
   }
 
-  /* Always show remove button on mobile (no hover state) */
+  /* Smaller remove button on mobile */
   .timeline-sound-item .sound-remove-btn {
     opacity: 1 !important;
-    min-width: 40px;
-    min-height: 40px;
-    width: 40px;
-    height: 40px;
-    font-size: 16px;
-    top: 50%;
-    right: 8px;
-    transform: translateY(-50%);
+    min-width: 24px;
+    min-height: 24px;
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+    top: 4px;
+    right: 4px;
+    transform: none;
     background: rgba(231, 76, 60, 0.9);
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.3);
   }
 
   .timeline-sound-item .sound-remove-btn i {
-    font-size: 16px;
+    font-size: 10px;
   }
 
-  /* Hide resize handles on mobile - not practical for touch */
+  /* Hide resize handles on mobile */
   .sound-resize-handle-left,
   .sound-resize-handle-right {
     display: none;
@@ -1523,34 +1523,11 @@ main {
 
   /* Playhead adjustments for mobile */
   .timeline-playhead {
-    width: 6px;
+    width: 4px;
   }
 
   .playhead-line {
-    width: 6px;
-  }
-
-  /* Mobile group timeline - vertical stacking when single row */
-  .group-sounds {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-height: auto !important;
-    height: auto !important;
-    overflow-x: hidden;
-    overflow-y: auto;
-    white-space: normal;
-    padding: 10px;
-  }
-
-  .timeline-sound-item {
-    position: relative !important;
-    left: auto !important;
-    top: auto !important;
-    width: 90% !important;
-    max-width: 300px;
-    margin: 5px auto !important;
-    flex-shrink: 0;
+    width: 4px;
   }
 }
 
