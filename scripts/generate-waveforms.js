@@ -23,7 +23,8 @@ const audioProcessor = require('../src/services/audio-processor');
 const SAMPLES_PER_WAVEFORM = 100; // Number of waveform data points (reduced for better visual)
 const BATCH_SIZE = 10; // Process sounds in batches to avoid memory issues
 const DRY_RUN = process.argv.includes('--dry-run'); // Test mode without saving
-const FORCE_REGENERATE = process.argv.includes('--force'); // Force regenerate all waveforms
+// Support both --force flag and FORCE_WAVEFORM env var (for dotenvx compatibility)
+const FORCE_REGENERATE = process.argv.includes('--force') || process.env.FORCE_WAVEFORM === '1';
 
 // Colors for console output
 const colors = {
