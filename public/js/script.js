@@ -1355,8 +1355,15 @@ $(document).ready(function () {
         $(this).css('opacity', '1');
       });
 
-      // Disable context menu on long press
+      // Disable context menu on long press (this prevents the second vibration)
       card.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }, { passive: false });
+
+      // Also prevent selection start which can trigger context menu
+      card.addEventListener('selectstart', function(e) {
         e.preventDefault();
         return false;
       });
@@ -1373,7 +1380,7 @@ $(document).ready(function () {
         touchStartY = touch.clientY;
         touchDraggedCard = $(this);
 
-        // Start long press timer
+        // Start long press timer (shorter than browser's context menu ~500ms)
         longPressTimer = setTimeout(() => {
           // Clear timer reference immediately
           longPressTimer = null;

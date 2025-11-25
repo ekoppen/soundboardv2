@@ -2029,9 +2029,17 @@ main {
 
 .card {
   touch-action: manipulation; /* Allow tap and pan, better for drag detection */
-  -webkit-touch-callout: none; /* Disable iOS callout on long press */
-  -webkit-user-select: none; /* Disable text selection */
-  user-select: none;
+  -webkit-touch-callout: none !important; /* Disable iOS callout on long press */
+  -webkit-user-select: none !important; /* Disable text selection */
+  -webkit-tap-highlight-color: transparent; /* Remove tap highlight */
+  user-select: none !important;
+}
+
+/* When dragging, prevent ALL native touch behaviors */
+.card.touch-dragging {
+  touch-action: none !important;
+  -webkit-touch-callout: none !important;
+  pointer-events: none;
 }
 
 .sound-remove-btn {
