@@ -1421,6 +1421,18 @@ main {
 
 .container-grid {
   margin: 0 auto;
+  display: flex !important;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+}
+
+.container-grid .card {
+  position: relative !important;
+  left: auto !important;
+  top: auto !important;
+  transform: none !important;
+  margin: 0 !important;
 }
 
 @media only screen and (max-width: 580px) {
@@ -1535,23 +1547,6 @@ main {
 @media only screen and (max-width: 1024px) {
   .timeline-sound-item .sound-remove-btn {
     opacity: 1 !important;
-  }
-}
-
-/* Center cards on mobile/tablet when only one column fits */
-@media only screen and (max-width: 680px) {
-  .container-grid {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    width: 100% !important;
-  }
-
-  .card {
-    position: relative !important;
-    left: auto !important;
-    top: auto !important;
-    transform: none !important;
   }
 }
 
