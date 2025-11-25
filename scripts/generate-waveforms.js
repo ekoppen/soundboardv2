@@ -23,6 +23,7 @@ const audioProcessor = require('../src/services/audio-processor');
 const SAMPLES_PER_WAVEFORM = 100; // Number of waveform data points (reduced for better visual)
 const BATCH_SIZE = 10; // Process sounds in batches to avoid memory issues
 const DRY_RUN = process.argv.includes('--dry-run'); // Test mode without saving
+const FORCE_REGENERATE = process.argv.includes('--force'); // Force regenerate all waveforms
 
 // Colors for console output
 const colors = {
@@ -98,8 +99,9 @@ async function processSoundWaveform(sound) {
       }
     }
 
-    // Generate waveform peaks if missing
-    if (!sound.waveform_data || sound.waveform_data === '' || sound.waveform_data === '[]') {
+    // Generate waveform peaks if missing or force regenerate
+    const needsWaveform = FORCE_REGENERATE || !sound.waveform_data || sound.waveform_data === '' || sound.waveform_data === '[]';
+    if (needsWaveform) {
       try {
         const peaks = await audioProcessor.extractWaveformPeaks(audioPath, SAMPLES_PER_WAVEFORM);
 
@@ -185,6 +187,9 @@ async function migrate() {
   if (DRY_RUN) {
     log.warning('Running in DRY RUN mode - no changes will be saved\n');
   }
+  if (FORCE_REGENERATE) {
+    log.warning('Running in FORCE mode - all waveforms will be regenerated\n');
+  }
 
   try {
     // Connect to MongoDB
@@ -192,26 +197,35 @@ async function migrate() {
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/soundboard');
     log.success('Connected to MongoDB\n');
 
-    // Find sounds with missing waveform data or duration
-    log.info('Searching for sounds with missing data...');
-    const soundsNeedingUpdate = await Sound.find({
-      $or: [
-        // Missing waveform
-        { waveform_data: { $exists: false } },
-        { waveform_data: null },
-        { waveform_data: '' },
-        { waveform_data: '[]' },
-        // Missing or invalid duration
-        { sound_length: { $exists: false } },
-        { sound_length: null },
-        { sound_length: '' },
-        { sound_length: '0:00' }
-      ],
-      active: 1 // Only process active sounds
-    });
+    // Find sounds to update
+    let soundsNeedingUpdate;
+
+    if (FORCE_REGENERATE) {
+      // Force mode: get all active sounds
+      log.info('Force mode: selecting all active sounds...');
+      soundsNeedingUpdate = await Sound.find({ active: 1 });
+    } else {
+      // Normal mode: only sounds with missing data
+      log.info('Searching for sounds with missing data...');
+      soundsNeedingUpdate = await Sound.find({
+        $or: [
+          // Missing waveform
+          { waveform_data: { $exists: false } },
+          { waveform_data: null },
+          { waveform_data: '' },
+          { waveform_data: '[]' },
+          // Missing or invalid duration
+          { sound_length: { $exists: false } },
+          { sound_length: null },
+          { sound_length: '' },
+          { sound_length: '0:00' }
+        ],
+        active: 1 // Only process active sounds
+      });
+    }
 
     if (soundsNeedingUpdate.length === 0) {
-      log.success('All sounds have complete data!');
+      log.success('No sounds found to process!');
       return;
     }
 
