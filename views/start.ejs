@@ -192,7 +192,7 @@
         
 
         </script>
-        <script src="js/script.js?v=1.4"></script>
+        <script src="js/script.js?v=1.5"></script>
 
     
         <script>
@@ -203,9 +203,11 @@
                 // quick search regex
                 var qsRegex;
     
-                // init Isotope
+                // init Isotope - disable layout on smaller screens
+                var useIsotopeLayout = window.innerWidth > 900;
                 var $grid = $('.container-grid').isotope({
                     itemSelector: '.card',
+                    layoutMode: useIsotopeLayout ? 'masonry' : 'fitRows',
                     filter: function () {
                         var $this = $(this);
                         var searchResult = qsRegex ? $this.text().match(qsRegex) : true;
@@ -214,8 +216,19 @@
                     },
                     masonry: {
                         fitWidth: true
-                        }
+                    },
+                    fitRows: {
+                        gutter: 15
+                    }
                 });
+
+                // Disable Isotope positioning on mobile/tablet for CSS flexbox centering
+                if (!useIsotopeLayout) {
+                    $grid.isotope('destroy');
+                    // Re-init with just filtering, no layout
+                    $grid = $('.container-grid');
+                    $grid.data('isotope-disabled', true);
+                }
 
     
     
@@ -224,7 +237,15 @@
                 // use value of search field to filter
                 var $quicksearch = $('.quicksearch').keyup(debounce(function () {
                     qsRegex = new RegExp($quicksearch.val(), 'gi');
-                    $grid.isotope();
+                    if ($grid.data && $grid.data('isotope-disabled')) {
+                        // Manual filtering when Isotope is disabled
+                        $('.container-grid .card').each(function() {
+                            var match = qsRegex ? $(this).text().match(qsRegex) : true;
+                            $(this).toggle(!!match);
+                        });
+                    } else {
+                        $grid.isotope();
+                    }
                 }));
     
     

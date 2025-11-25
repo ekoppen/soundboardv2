@@ -1399,21 +1399,31 @@ $(document).ready(function () {
         $(this).css('opacity', '1');
       });
 
+      // Track if touch is active on this card (for context menu blocking)
+      let touchActive = false;
+
       // Disable context menu on long press (this prevents the second vibration)
       card.addEventListener('contextmenu', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
+        // Always block context menu on touch devices when touch is active
+        if (touchActive || longPressTimer || isDragging) {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }
       }, { passive: false });
 
       // Also prevent selection start which can trigger context menu
       card.addEventListener('selectstart', function(e) {
-        e.preventDefault();
-        return false;
+        if (touchActive || longPressTimer || isDragging) {
+          e.preventDefault();
+          return false;
+        }
       });
 
       // Touch start - begin long press detection
       card.addEventListener('touchstart', function(e) {
+        touchActive = true;
+
         // Ignore if already dragging or timer is running
         if (isDragging || longPressTimer) {
           return;
@@ -1450,15 +1460,25 @@ $(document).ready(function () {
         }, LONG_PRESS_DURATION);
       }, { passive: false });
 
-      // Block context menu globally while long press timer is active
+      // Touch end - cleanup
       card.addEventListener('touchend', function(e) {
         // Small delay to ensure contextmenu event is blocked
         setTimeout(() => {
+          touchActive = false;
           if (longPressTimer) {
             clearTimeout(longPressTimer);
             longPressTimer = null;
           }
-        }, 10);
+        }, 50);
+      });
+
+      // Touch cancel - cleanup
+      card.addEventListener('touchcancel', function(e) {
+        touchActive = false;
+        if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+        }
       });
 
       // Touch move - handle drag or cancel long press
