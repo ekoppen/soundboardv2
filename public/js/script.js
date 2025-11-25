@@ -1313,7 +1313,7 @@ $(document).ready(function () {
 
       GroupsHelper.addSound(groupId, soundData);
       renderGroups();
-      showToast('success', 'Toegevoegd', `"${soundData.title}" toegevoegd aan groep`, 1500);
+      // Toast disabled - visual feedback is sufficient
       return true;
     }
 
@@ -1363,6 +1363,11 @@ $(document).ready(function () {
 
       // Touch start - begin long press detection
       card.addEventListener('touchstart', function(e) {
+        // Ignore if already dragging or timer is running
+        if (isDragging || longPressTimer) {
+          return;
+        }
+
         const touch = e.touches[0];
         touchStartX = touch.clientX;
         touchStartY = touch.clientY;
@@ -1370,6 +1375,9 @@ $(document).ready(function () {
 
         // Start long press timer
         longPressTimer = setTimeout(() => {
+          // Clear timer reference immediately
+          longPressTimer = null;
+
           // Long press triggered - start drag mode
           isDragging = true;
 
@@ -1483,7 +1491,7 @@ $(document).ready(function () {
 
     GroupsHelper.removeSound(groupId, instanceId);
     renderGroups();
-    showToast('info', 'Verwijderd', 'Sound verwijderd uit groep', 1500);
+    // Toast disabled - visual feedback is sufficient
   });
 
   // Event: Remove sound from group - touchend for mobile (more reliable than click)
@@ -1496,7 +1504,7 @@ $(document).ready(function () {
 
     GroupsHelper.removeSound(groupId, instanceId);
     renderGroups();
-    showToast('info', 'Verwijderd', 'Sound verwijderd uit groep', 1500);
+    // Toast disabled - visual feedback is sufficient
   });
 
   // Track active playback per group
