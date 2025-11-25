@@ -1598,7 +1598,7 @@ $(document).ready(function () {
       // Pause - store current position
       const currentPlayhead = $(`.group-sounds[data-group-id="${groupId}"]`).find('.timeline-playhead');
       const pausedX = parseFloat(currentPlayhead.css('left')) || 0;
-      pausedPositions[groupId] = pausedX / 50; // Convert pixels to seconds
+      pausedPositions[groupId] = pausedX / getPixelsPerSecond(); // Convert pixels to seconds
 
       stopPlayback(groupId);
       icon.removeClass('fa-pause').addClass('fa-play');
@@ -1644,7 +1644,7 @@ $(document).ready(function () {
 
     // Set initial playhead position for resume
     if (resumeFrom > 0) {
-      updatePlayheadPosition(groupSoundsEl, resumeFrom * 50);
+      updatePlayheadPosition(groupSoundsEl, resumeFrom * getPixelsPerSecond());
     }
 
     function update() {
@@ -1668,7 +1668,7 @@ $(document).ready(function () {
       });
 
       // Update playhead position
-      const playheadX = elapsed * 50; // 50 pixels per second
+      const playheadX = elapsed * getPixelsPerSecond();
       updatePlayheadPosition(groupSoundsEl, playheadX);
 
       // Update progress bar
