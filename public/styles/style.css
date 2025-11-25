@@ -1496,11 +1496,23 @@ main {
     font-size: 0.65rem;
   }
 
-  /* Larger touch targets for mobile */
+  /* Always show remove button on mobile (no hover state) */
   .timeline-sound-item .sound-remove-btn {
-    min-width: 36px;
-    min-height: 36px;
-    font-size: 14px;
+    opacity: 1 !important;
+    min-width: 40px;
+    min-height: 40px;
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    background: rgba(231, 76, 60, 0.9);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .timeline-sound-item .sound-remove-btn i {
+    font-size: 16px;
   }
 
   /* Hide resize handles on mobile - not practical for touch */
