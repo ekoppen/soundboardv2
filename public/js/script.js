@@ -725,6 +725,28 @@ $(document).ready(function () {
   // Sound Groups System
   // ========================================
 
+  // Get responsive pixels per second - smaller on mobile for narrower fragments
+  function getPixelsPerSecond() {
+    const isMobile = window.innerWidth <= 580;
+    return isMobile ? 25 : 50; // Mobile: 25px/sec, Desktop: 50px/sec
+  }
+
+  // Track last known scale to detect changes
+  let lastPixelsPerSecond = getPixelsPerSecond();
+
+  // Re-render groups on resize (debounced) if scale changed
+  let resizeTimeout;
+  window.addEventListener('resize', function() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(function() {
+      const currentScale = getPixelsPerSecond();
+      if (currentScale !== lastPixelsPerSecond) {
+        lastPixelsPerSecond = currentScale;
+        renderGroups();
+      }
+    }, 250);
+  });
+
   // Render all groups
   function renderGroups() {
     const groups = GroupsHelper.getGroups();
@@ -781,18 +803,42 @@ $(document).ready(function () {
     const ctx = canvas.getContext('2d');
     const width = canvas.width;
     const height = canvas.height;
-    const barWidth = width / data.length;
 
     // Clear canvas
     ctx.clearRect(0, 0, width, height);
 
-    // Draw waveform bars
-    ctx.fillStyle = 'rgba(153, 51, 51, 0.7)';
-    data.forEach((value, index) => {
-      const barHeight = value * (height * 0.8);
-      const x = index * barWidth;
+    // Downsample if too many data points (old 1000-sample data)
+    let displayData = data;
+    const maxBars = 100; // Target number of bars for good visual
+    if (data.length > maxBars * 1.5) {
+      const sampleRate = Math.ceil(data.length / maxBars);
+      displayData = [];
+      for (let i = 0; i < data.length; i += sampleRate) {
+        // Take max value in each sample window for better peaks
+        let maxVal = 0;
+        for (let j = i; j < Math.min(i + sampleRate, data.length); j++) {
+          maxVal = Math.max(maxVal, data[j]);
+        }
+        displayData.push(maxVal);
+      }
+    }
+
+    // Calculate bar dimensions with gap
+    const gap = 2;
+    const barWidth = Math.max((width / displayData.length) - gap, 2);
+
+    // Draw waveform bars with gradient
+    const gradient = ctx.createLinearGradient(0, 0, 0, height);
+    gradient.addColorStop(0, 'rgba(200, 80, 80, 0.9)');
+    gradient.addColorStop(0.5, 'rgba(153, 51, 51, 0.8)');
+    gradient.addColorStop(1, 'rgba(100, 30, 30, 0.9)');
+    ctx.fillStyle = gradient;
+
+    displayData.forEach((value, index) => {
+      const barHeight = Math.max(value * (height * 0.85), 4); // Min height for visibility
+      const x = index * (barWidth + gap);
       const y = (height / 2) - (barHeight / 2);
-      ctx.fillRect(x, y, Math.max(barWidth - 0.5, 1), barHeight);
+      ctx.fillRect(x, y, barWidth, barHeight);
     });
   }
 
@@ -866,7 +912,7 @@ $(document).ready(function () {
   // Create group sound item HTML - Timeline version with waveform
   function createGroupSoundElement(sound) {
     const durationSeconds = GroupsHelper.parseDuration(sound.duration);
-    const pixelsPerSecond = 50; // Scale: 50px = 1 second
+    const pixelsPerSecond = getPixelsPerSecond();
     const width = durationSeconds * pixelsPerSecond;
     const left = sound.startTime * pixelsPerSecond;
 
@@ -1008,7 +1054,6 @@ $(document).ready(function () {
     let startX = 0;
     let startLeft = 0;
     let isDragging = false;
-    const pixelsPerSecond = 50;
     const DRAG_THRESHOLD = 5;
 
     // Start drag - mouse
@@ -1103,7 +1148,7 @@ $(document).ready(function () {
 
       // Calculate new start time from position
       const newLeft = parseInt(draggedItem.css('left')) || 0;
-      const newStartTime = newLeft / pixelsPerSecond;
+      const newStartTime = newLeft / getPixelsPerSecond();
       const instanceId = draggedItem.data('instance-id');
 
       // Check for final overlaps
@@ -1126,7 +1171,7 @@ $(document).ready(function () {
 
       // Calculate new start time from position
       const newLeft = parseInt(draggedItem.css('left')) || 0;
-      const newStartTime = newLeft / pixelsPerSecond;
+      const newStartTime = newLeft / getPixelsPerSecond();
       const instanceId = draggedItem.data('instance-id');
 
       // Check for final overlaps
@@ -1151,7 +1196,6 @@ $(document).ready(function () {
 
   // Initialize click-to-seek on timeline and draggable playhead
   function initializeTimelineSeek(groupId, groupSoundsEl) {
-    const pixelsPerSecond = 50;
     let isDraggingPlayhead = false;
     let playheadDragStart = 0;
 
@@ -1169,7 +1213,7 @@ $(document).ready(function () {
       updatePlayheadPosition($(this), clickX);
 
       // Update pause position
-      pausedPositions[groupId] = clickX / pixelsPerSecond;
+      pausedPositions[groupId] = clickX / getPixelsPerSecond();
     });
 
     // Drag playhead
@@ -1193,7 +1237,7 @@ $(document).ready(function () {
       updatePlayheadPosition(groupSoundsEl, newX);
 
       // Update pause position in real-time
-      pausedPositions[groupId] = newX / pixelsPerSecond;
+      pausedPositions[groupId] = newX / getPixelsPerSecond();
     });
 
     $(document).on('mouseup.playhead-drag', function(e) {

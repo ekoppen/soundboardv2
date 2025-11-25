@@ -202,6 +202,7 @@ class AudioProcessor {
 
   /**
    * Generate approximate waveform (fallback method)
+   * Creates a more realistic waveform pattern with distinct peaks and valleys
    * @param {string} filePath - Audio file path
    * @param {number} samples - Number of samples
    * @returns {Promise<Array>}
@@ -209,15 +210,45 @@ class AudioProcessor {
   async generateApproximateWaveform(filePath, samples) {
     return new Promise((resolve, reject) => {
       try {
-        const metadata = this.getAudioMetadata(filePath);
-
-        // Generate smooth waveform pattern (simulated)
+        // Generate more realistic waveform with better amplitude contrast
         const peaks = [];
+
+        // Create several "segments" with different energy levels (simulating music structure)
+        const segmentCount = Math.floor(Math.random() * 4) + 3; // 3-6 segments
+        const segmentLength = samples / segmentCount;
+
         for (let i = 0; i < samples; i++) {
-          const progress = i / samples;
-          const baseLevel = 0.3 + Math.sin(progress * Math.PI) * 0.4;
-          const variation = Math.random() * 0.3;
-          peaks.push(Math.min(1.0, baseLevel + variation));
+          const segmentIndex = Math.floor(i / segmentLength);
+          const positionInSegment = (i % segmentLength) / segmentLength;
+
+          // Each segment has a base energy level (0.2-0.9)
+          const segmentEnergy = 0.2 + (Math.sin(segmentIndex * 1.7 + 0.5) + 1) * 0.35;
+
+          // Add natural envelope within segment (attack, sustain, release)
+          let envelope = 1;
+          if (positionInSegment < 0.1) {
+            // Attack
+            envelope = positionInSegment * 10;
+          } else if (positionInSegment > 0.85) {
+            // Release
+            envelope = (1 - positionInSegment) * 6.67;
+          }
+
+          // Add high-frequency variation (beat-like peaks)
+          const beatFreq = 8 + Math.floor(Math.random() * 8); // 8-16 beats per segment
+          const beatPhase = (i / segmentLength) * beatFreq * Math.PI * 2;
+          const beatModulation = 0.3 * Math.abs(Math.sin(beatPhase));
+
+          // Add random micro-variation
+          const microVariation = (Math.random() - 0.5) * 0.25;
+
+          // Combine all factors
+          let value = segmentEnergy * envelope + beatModulation + microVariation;
+
+          // Ensure value stays in valid range with good contrast
+          value = Math.max(0.08, Math.min(0.95, value));
+
+          peaks.push(value);
         }
 
         resolve(peaks);
