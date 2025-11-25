@@ -1260,7 +1260,7 @@ $(document).ready(function () {
     let cloneOffsetX = 0;
     let cloneOffsetY = 0;
 
-    const LONG_PRESS_DURATION = 300; // ms - hold before drag starts
+    const LONG_PRESS_DURATION = 200; // ms - hold before drag starts (shorter to beat context menu)
     const MOVE_THRESHOLD = 10; // pixels - movement allowed during long press
 
     // Helper to create and position the drag clone
@@ -1448,7 +1448,18 @@ $(document).ready(function () {
             navigator.vibrate(50);
           }
         }, LONG_PRESS_DURATION);
-      }, { passive: true });
+      }, { passive: false });
+
+      // Block context menu globally while long press timer is active
+      card.addEventListener('touchend', function(e) {
+        // Small delay to ensure contextmenu event is blocked
+        setTimeout(() => {
+          if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+          }
+        }, 10);
+      });
 
       // Touch move - handle drag or cancel long press
       card.addEventListener('touchmove', function(e) {
