@@ -20,7 +20,7 @@ const Sound = require('../src/sound-model');
 const audioProcessor = require('../src/services/audio-processor');
 
 // Configuration
-const SAMPLES_PER_WAVEFORM = 1000; // Number of waveform data points
+const SAMPLES_PER_WAVEFORM = 100; // Number of waveform data points (reduced for better visual)
 const BATCH_SIZE = 10; // Process sounds in batches to avoid memory issues
 const DRY_RUN = process.argv.includes('--dry-run'); // Test mode without saving
 
