@@ -1206,18 +1206,146 @@ $(document).ready(function () {
 
   // Make cards draggable to groups (mouse + touch support)
   function makeCardsDraggable() {
+    // Shared state for touch drag
     let touchDraggedCard = null;
-    let touchStartX = 0;
-    let touchStartY = 0;
     let isDragging = false;
     let dragClone = null;
-    const DRAG_THRESHOLD = 20; // pixels - threshold before considering it a drag
+    let longPressTimer = null;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let cloneOffsetX = 0;
+    let cloneOffsetY = 0;
 
+    const LONG_PRESS_DURATION = 300; // ms - hold before drag starts
+    const MOVE_THRESHOLD = 10; // pixels - movement allowed during long press
+
+    // Helper to create and position the drag clone
+    function createDragClone(card, touchX, touchY) {
+      const cardRect = card[0].getBoundingClientRect();
+
+      // Calculate offset from touch point to card center
+      cloneOffsetX = cardRect.width / 2;
+      cloneOffsetY = cardRect.height / 2;
+
+      dragClone = card.clone();
+      dragClone.addClass('drag-clone');
+      dragClone.css({
+        position: 'fixed',
+        left: (touchX - cloneOffsetX) + 'px',
+        top: (touchY - cloneOffsetY) + 'px',
+        width: cardRect.width + 'px',
+        height: cardRect.height + 'px',
+        zIndex: 10000,
+        pointerEvents: 'none',
+        opacity: 0.9,
+        transform: 'scale(0.85)',
+        boxShadow: '0 15px 40px rgba(0,0,0,0.6)',
+        transition: 'transform 0.15s ease',
+        borderRadius: '15px'
+      });
+      $('body').append(dragClone);
+    }
+
+    // Helper to move the clone
+    function moveDragClone(touchX, touchY) {
+      if (dragClone) {
+        dragClone.css({
+          left: (touchX - cloneOffsetX) + 'px',
+          top: (touchY - cloneOffsetY) + 'px'
+        });
+      }
+    }
+
+    // Helper to check drop zone
+    function checkDropZone(touchX, touchY) {
+      // Hide clone temporarily
+      if (dragClone) dragClone.css('visibility', 'hidden');
+
+      const elementBelow = document.elementFromPoint(touchX, touchY);
+
+      // Show clone again
+      if (dragClone) dragClone.css('visibility', 'visible');
+
+      // Remove all drag-over classes
+      $('.group-sounds').removeClass('drag-over');
+
+      // Check if over a group
+      if (elementBelow) {
+        const groupSounds = $(elementBelow).closest('.group-sounds');
+        if (groupSounds.length > 0) {
+          groupSounds.addClass('drag-over');
+          return groupSounds;
+        }
+      }
+      return null;
+    }
+
+    // Helper to handle drop
+    function handleDrop(groupSounds, soundId) {
+      if (!groupSounds || !soundId) return false;
+
+      const groupId = groupSounds.data('group-id');
+      const cardEl = $(`.card#${soundId}`);
+      let audio = $(`audio#${soundId}`);
+      if (audio.length === 0) {
+        audio = $(`audio[id="${soundId}"]`);
+      }
+      if (audio.length === 0) {
+        audio = $('audio').filter(function() {
+          return $(this).attr('id') === soundId;
+        });
+      }
+
+      const waveformAttr = audio.attr('waveform_data');
+      let waveformData = null;
+      if (waveformAttr && waveformAttr !== '[]' && waveformAttr.length > 2) {
+        waveformData = waveformAttr;
+      }
+
+      const soundData = {
+        id: soundId,
+        title: cardEl.find('.sound-title').text().trim(),
+        image: cardEl.find('.sound-image img').attr('src').split('/').pop(),
+        duration: cardEl.find('.sound-timer').text().trim(),
+        audioSrc: audio.find('source').attr('src') || $(`audio#${soundId} source`).attr('src'),
+        waveformData: waveformData
+      };
+
+      GroupsHelper.addSound(groupId, soundData);
+      renderGroups();
+      showToast('success', 'Toegevoegd', `"${soundData.title}" toegevoegd aan groep`, 1500);
+      return true;
+    }
+
+    // Helper to cleanup drag state
+    function cleanupDrag() {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+      if (touchDraggedCard) {
+        touchDraggedCard.css('opacity', '1');
+        touchDraggedCard.removeClass('touch-dragging');
+      }
+      if (dragClone) {
+        dragClone.remove();
+        dragClone = null;
+      }
+      $('.group-sounds').removeClass('drag-over');
+      touchDraggedCard = null;
+      isDragging = false;
+
+      // Re-enable scrolling
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    }
+
+    // Attach events to each card
     $('.card').each(function() {
       const card = this;
       card.setAttribute('draggable', 'true');
 
-      // Mouse drag events
+      // Mouse drag events (desktop)
       card.addEventListener('dragstart', function(e) {
         e.dataTransfer.setData('soundId', $(this).attr('id'));
         $(this).css('opacity', '0.5');
@@ -1233,175 +1361,84 @@ $(document).ready(function () {
         return false;
       });
 
-      // Touch drag events
+      // Touch start - begin long press detection
       card.addEventListener('touchstart', function(e) {
-        // Store initial touch position
-        touchDraggedCard = $(this);
-        touchStartX = e.touches[0].pageX;
-        touchStartY = e.touches[0].pageY;
-        isDragging = false;
-        // Don't preventDefault yet - let normal scrolling work until we detect drag
-      }, { passive: true });
-
-      card.addEventListener('touchmove', function(e) {
-        if (!touchDraggedCard) return;
-
         const touch = e.touches[0];
-        const deltaX = Math.abs(touch.pageX - touchStartX);
-        const deltaY = Math.abs(touch.pageY - touchStartY);
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        touchDraggedCard = $(this);
 
-        // Check if we've moved enough to be considered dragging
-        if (!isDragging && (deltaX > DRAG_THRESHOLD || deltaY > DRAG_THRESHOLD)) {
+        // Start long press timer
+        longPressTimer = setTimeout(() => {
+          // Long press triggered - start drag mode
           isDragging = true;
-          touchDraggedCard.css('opacity', '0.4');
+
+          // Disable scrolling
+          document.body.style.overflow = 'hidden';
+          document.body.style.touchAction = 'none';
+
+          // Visual feedback on original card
+          touchDraggedCard.css('opacity', '0.3');
           touchDraggedCard.addClass('touch-dragging');
 
-          // Create a visual clone that follows the finger
-          const cardRect = touchDraggedCard[0].getBoundingClientRect();
-          dragClone = touchDraggedCard.clone();
-          dragClone.addClass('drag-clone');
-          dragClone.css({
-            position: 'fixed',
-            left: cardRect.left + 'px',
-            top: cardRect.top + 'px',
-            width: cardRect.width + 'px',
-            height: cardRect.height + 'px',
-            zIndex: 10000,
-            pointerEvents: 'none',
-            opacity: 0.85,
-            transform: 'scale(0.9)',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-            transition: 'none'
-          });
-          $('body').append(dragClone);
-        }
+          // Create clone at finger position
+          createDragClone(touchDraggedCard, touchStartX, touchStartY);
 
-        if (isDragging) {
-          // Prevent scrolling while dragging
-          e.preventDefault();
-
-          // Move the clone to follow the finger
-          if (dragClone) {
-            const cardRect = touchDraggedCard[0].getBoundingClientRect();
-            const offsetX = touch.pageX - touchStartX;
-            const offsetY = touch.pageY - touchStartY;
-            dragClone.css({
-              left: (cardRect.left + offsetX) + 'px',
-              top: (cardRect.top + offsetY) + 'px'
-            });
+          // Haptic feedback if available
+          if (navigator.vibrate) {
+            navigator.vibrate(50);
           }
+        }, LONG_PRESS_DURATION);
+      }, { passive: true });
 
-          // Temporarily hide the clone to detect element below
-          if (dragClone) {
-            dragClone.css('display', 'none');
-          }
+      // Touch move - handle drag or cancel long press
+      card.addEventListener('touchmove', function(e) {
+        const touch = e.touches[0];
+        const deltaX = Math.abs(touch.clientX - touchStartX);
+        const deltaY = Math.abs(touch.clientY - touchStartY);
 
-          // Check if we're over a group drop zone
-          const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-
-          // Show clone again
-          if (dragClone) {
-            dragClone.css('display', 'block');
-          }
-
-          // Remove all drag-over classes first
-          $('.group-sounds').removeClass('drag-over');
-
-          // Add drag-over to the group we're hovering over
-          if (elementBelow) {
-            const groupSounds = $(elementBelow).closest('.group-sounds');
-            if (groupSounds.length > 0) {
-              groupSounds.addClass('drag-over');
+        if (!isDragging) {
+          // If moved too much before long press completes, cancel it
+          if (deltaX > MOVE_THRESHOLD || deltaY > MOVE_THRESHOLD) {
+            if (longPressTimer) {
+              clearTimeout(longPressTimer);
+              longPressTimer = null;
             }
+            touchDraggedCard = null;
           }
+          return; // Allow normal scrolling
         }
+
+        // We're dragging - prevent scroll and move clone
+        e.preventDefault();
+        e.stopPropagation();
+
+        moveDragClone(touch.clientX, touch.clientY);
+        checkDropZone(touch.clientX, touch.clientY);
       }, { passive: false });
 
+      // Touch end - handle drop or cleanup
       card.addEventListener('touchend', function(e) {
-        if (!touchDraggedCard) return;
+        if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+        }
 
-        if (isDragging) {
+        if (isDragging && touchDraggedCard) {
           const touch = e.changedTouches[0];
+          const groupSounds = checkDropZone(touch.clientX, touch.clientY);
 
-          // Hide clone to get element below
-          if (dragClone) {
-            dragClone.css('display', 'none');
-          }
-
-          const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-
-          if (elementBelow) {
-            const groupSounds = $(elementBelow).closest('.group-sounds');
-
-            if (groupSounds.length > 0) {
-              // Dropped on a group - add the sound
-              const groupId = groupSounds.data('group-id');
-              const soundId = touchDraggedCard.attr('id');
-
-              // Get sound data - EXACT same as desktop drop handler
-              const cardEl = $(`.card#${soundId}`);
-              let audio = $(`audio#${soundId}`);
-              if (audio.length === 0) {
-                audio = $(`audio[id="${soundId}"]`);
-              }
-              if (audio.length === 0) {
-                audio = $('audio').filter(function() {
-                  return $(this).attr('id') === soundId;
-                });
-              }
-
-              const waveformAttr = audio.attr('waveform_data');
-              let waveformData = null;
-              if (waveformAttr && waveformAttr !== '[]' && waveformAttr.length > 2) {
-                waveformData = waveformAttr;
-              }
-
-              const soundData = {
-                id: soundId,
-                title: cardEl.find('.sound-title').text().trim(),
-                image: cardEl.find('.sound-image img').attr('src').split('/').pop(),
-                duration: cardEl.find('.sound-timer').text().trim(),
-                audioSrc: audio.find('source').attr('src') || $(`audio#${soundId} source`).attr('src'),
-                waveformData: waveformData
-              };
-
-              // Add to group
-              GroupsHelper.addSound(groupId, soundData);
-              renderGroups();
-
-              // Visual feedback for successful drop
-              showToast('success', 'Toegevoegd', `"${soundData.title}" toegevoegd aan groep`, 1500);
-            }
+          if (groupSounds) {
+            handleDrop(groupSounds, touchDraggedCard.attr('id'));
           }
         }
 
-        // Cleanup
-        if (touchDraggedCard) {
-          touchDraggedCard.css('opacity', '1');
-          touchDraggedCard.removeClass('touch-dragging');
-        }
-        if (dragClone) {
-          dragClone.remove();
-          dragClone = null;
-        }
-        $('.group-sounds').removeClass('drag-over');
-        touchDraggedCard = null;
-        isDragging = false;
+        cleanupDrag();
       }, { passive: false });
 
+      // Touch cancel - cleanup
       card.addEventListener('touchcancel', function(e) {
-        // Cleanup on cancel
-        if (touchDraggedCard) {
-          touchDraggedCard.css('opacity', '1');
-          touchDraggedCard.removeClass('touch-dragging');
-        }
-        if (dragClone) {
-          dragClone.remove();
-          dragClone = null;
-        }
-        $('.group-sounds').removeClass('drag-over');
-        touchDraggedCard = null;
-        isDragging = false;
+        cleanupDrag();
       });
     });
   }
@@ -1436,16 +1473,30 @@ $(document).ready(function () {
     );
   });
 
-  // Event: Remove sound from group (timeline version)
+  // Event: Remove sound from group (timeline version) - click for desktop
   $(document).on('click', '.sound-remove-btn', function(e) {
     e.stopPropagation();
+    e.preventDefault();
     const instanceId = $(this).data('instance-id');
     const groupEl = $(this).closest('.sound-group');
     const groupId = groupEl.data('group-id');
 
     GroupsHelper.removeSound(groupId, instanceId);
     renderGroups();
-    // showToast('info', 'Verwijderd', 'Sound verwijderd uit groep', 1500);
+    showToast('info', 'Verwijderd', 'Sound verwijderd uit groep', 1500);
+  });
+
+  // Event: Remove sound from group - touchend for mobile (more reliable than click)
+  $(document).on('touchend', '.sound-remove-btn', function(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    const instanceId = $(this).data('instance-id');
+    const groupEl = $(this).closest('.sound-group');
+    const groupId = groupEl.data('group-id');
+
+    GroupsHelper.removeSound(groupId, instanceId);
+    renderGroups();
+    showToast('info', 'Verwijderd', 'Sound verwijderd uit groep', 1500);
   });
 
   // Track active playback per group
