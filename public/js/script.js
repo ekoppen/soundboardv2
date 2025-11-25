@@ -1,4 +1,40 @@
 ﻿// ========================================
+// Global Context Menu Blocker for Touch Devices
+// ========================================
+(function() {
+  // Detect touch device
+  const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+  if (isTouchDevice) {
+    // Block context menu on all cards globally
+    document.addEventListener('contextmenu', function(e) {
+      if (e.target.closest('.card')) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    }, { capture: true, passive: false });
+
+    // Also block on touchstart to prevent any native long-press behavior
+    document.addEventListener('touchstart', function(e) {
+      if (e.target.closest('.card')) {
+        // Set a CSS class to indicate touch is active
+        e.target.closest('.card').classList.add('touch-active');
+      }
+    }, { passive: true });
+
+    document.addEventListener('touchend', function(e) {
+      // Remove touch-active class after a delay
+      document.querySelectorAll('.card.touch-active').forEach(function(card) {
+        setTimeout(function() {
+          card.classList.remove('touch-active');
+        }, 100);
+      });
+    }, { passive: true });
+  }
+})();
+
+// ========================================
 // Toast Notification System
 // ========================================
 window.showToast = function(type, title, message, duration = 3000) {
