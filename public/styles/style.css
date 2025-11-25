@@ -1531,6 +1531,113 @@ main {
   }
 }
 
+/* Extra narrow screens (Galaxy Fold front screen ~280-375px) */
+@media only screen and (max-width: 400px) {
+  /* Remove min-width constraint on navbar */
+  .topnav {
+    min-width: 100%;
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 50px;
+    padding: 5px 0;
+  }
+
+  /* Compact menu links */
+  .topnav a.menu {
+    padding: 0 10px;
+    font-size: 14px;
+    height: 40px;
+  }
+
+  /* Stack nav controls below menu */
+  .nav-controls {
+    order: 3;
+    width: 100%;
+    margin: 5px 10px;
+    gap: 5px;
+    max-width: none;
+  }
+
+  .nav-controls .quicksearch {
+    min-width: 80px;
+    flex: 1;
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  /* Smaller nav buttons */
+  .nav-icon-btn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+  }
+
+  .nav-icon-btn i {
+    font-size: 14px;
+  }
+
+  /* Hide online counter text, show only icon */
+  .online-counter {
+    padding: 5px 8px;
+  }
+
+  .online-counter .counter-text {
+    display: none;
+  }
+
+  /* Adjust main content for taller navbar */
+  .main {
+    margin-top: 95px !important;
+  }
+
+  /* Full-width cards for narrow screens */
+  .container-grid {
+    width: 100% !important;
+    padding: 0 5px;
+  }
+
+  .card {
+    width: calc(100vw - 20px) !important;
+    max-width: 280px;
+    margin-right: 10px !important;
+    margin-bottom: 10px !important;
+  }
+
+  /* Smaller group headers */
+  .group-header h3 {
+    font-size: 1rem;
+  }
+
+  .group-actions button {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+
+  /* Even more compact timeline on very narrow screens */
+  .group-sounds {
+    height: 60px;
+    min-height: 60px;
+    padding: 4px 6px;
+  }
+
+  .timeline-sound-item {
+    height: 52px;
+    min-height: 52px;
+  }
+
+  .timeline-sound-item .waveform-canvas {
+    height: 52px;
+  }
+
+  .timeline-sound-item .sound-title-overlay {
+    font-size: 0.55rem;
+  }
+
+  .timeline-sound-item .sound-duration-overlay {
+    display: none;
+  }
+}
+
 .card {
   position: absolute;
   border-radius: 15px;
