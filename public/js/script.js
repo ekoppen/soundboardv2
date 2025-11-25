@@ -1611,6 +1611,16 @@ $(document).ready(function () {
     }
   });
 
+  // Helper to get actual audio duration (more accurate than MM:SS string)
+  function getActualSoundDuration(sound) {
+    const audio = document.querySelector(`audio[id="${sound.soundId}"]`);
+    if (audio && audio.duration && !isNaN(audio.duration)) {
+      return audio.duration;
+    }
+    // Fallback to parsed MM:SS duration
+    return GroupsHelper.parseDuration(sound.duration);
+  }
+
   // Play group with timeline support (overlapping sounds)
   function playGroup(groupId, resumeFrom = 0) {
     const group = GroupsHelper.getGroup(groupId);
@@ -1629,10 +1639,10 @@ $(document).ready(function () {
     const groupSoundsEl = $(`.group-sounds[data-group-id="${groupId}"]`);
     const playhead = groupSoundsEl.find('.timeline-playhead');
 
-    // Calculate timeline end (last sound's end time)
+    // Calculate timeline end (last sound's end time) using actual audio duration
     let timelineEnd = 0;
     group.sounds.forEach(sound => {
-      const soundEnd = sound.startTime + GroupsHelper.parseDuration(sound.duration);
+      const soundEnd = sound.startTime + getActualSoundDuration(sound);
       if (soundEnd > timelineEnd) timelineEnd = soundEnd;
     });
 
@@ -1660,10 +1670,10 @@ $(document).ready(function () {
       // Sort sounds by start time with fresh data
       const sortedSounds = [...currentGroup.sounds].sort((a, b) => a.startTime - b.startTime);
 
-      // Recalculate timeline end
+      // Recalculate timeline end using actual audio durations
       let currentTimelineEnd = 0;
       currentGroup.sounds.forEach(sound => {
-        const soundEnd = sound.startTime + GroupsHelper.parseDuration(sound.duration);
+        const soundEnd = sound.startTime + getActualSoundDuration(sound);
         if (soundEnd > currentTimelineEnd) currentTimelineEnd = soundEnd;
       });
 
@@ -1678,7 +1688,7 @@ $(document).ready(function () {
       if (isParallelMode) {
         // Parallel mode: play overlapping sounds simultaneously
         sortedSounds.forEach(sound => {
-          const soundEnd = sound.startTime + GroupsHelper.parseDuration(sound.duration);
+          const soundEnd = sound.startTime + getActualSoundDuration(sound);
           const shouldBePlaying = elapsed >= sound.startTime && elapsed < soundEnd;
 
           if (shouldBePlaying && !playingSounds.has(sound.instanceId)) {
@@ -1692,7 +1702,7 @@ $(document).ready(function () {
         let currentSound = null;
         for (let i = 0; i < sortedSounds.length; i++) {
           const sound = sortedSounds[i];
-          const soundEnd = sound.startTime + GroupsHelper.parseDuration(sound.duration);
+          const soundEnd = sound.startTime + getActualSoundDuration(sound);
 
           if (elapsed >= sound.startTime && elapsed < soundEnd) {
             currentSound = sound;
