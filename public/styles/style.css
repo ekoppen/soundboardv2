@@ -2154,17 +2154,11 @@ main {
 }
 
 .card {
-  touch-action: none; /* Disable ALL native touch behaviors to prevent context menu */
+  touch-action: pan-x pan-y; /* Allow scrolling, but we handle long-press via JS */
   -webkit-touch-callout: none !important; /* Disable iOS callout on long press */
   -webkit-user-select: none !important; /* Disable text selection */
   -webkit-tap-highlight-color: transparent; /* Remove tap highlight */
   user-select: none !important;
-}
-
-/* When touch is active, reinforce touch blocking */
-.card.touch-active {
-  touch-action: none !important;
-  -webkit-touch-callout: none !important;
 }
 
 /* When dragging, prevent ALL native touch behaviors */

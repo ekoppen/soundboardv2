@@ -2,36 +2,43 @@
 // Global Context Menu Blocker for Touch Devices
 // ========================================
 (function() {
-  // Detect touch device
-  const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  // Track if last interaction was touch
+  let lastInteractionWasTouch = false;
 
-  if (isTouchDevice) {
-    // Block context menu on all cards globally
-    document.addEventListener('contextmenu', function(e) {
-      if (e.target.closest('.card')) {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-      }
-    }, { capture: true, passive: false });
+  // Detect touch interactions
+  document.addEventListener('touchstart', function(e) {
+    lastInteractionWasTouch = true;
+    if (e.target.closest('.card')) {
+      e.target.closest('.card').classList.add('touch-active');
+    }
+  }, { passive: true });
 
-    // Also block on touchstart to prevent any native long-press behavior
-    document.addEventListener('touchstart', function(e) {
-      if (e.target.closest('.card')) {
-        // Set a CSS class to indicate touch is active
-        e.target.closest('.card').classList.add('touch-active');
-      }
-    }, { passive: true });
+  document.addEventListener('touchend', function(e) {
+    // Remove touch-active class after a delay
+    document.querySelectorAll('.card.touch-active').forEach(function(card) {
+      setTimeout(function() {
+        card.classList.remove('touch-active');
+      }, 100);
+    });
+    // Reset touch flag after delay
+    setTimeout(function() {
+      lastInteractionWasTouch = false;
+    }, 500);
+  }, { passive: true });
 
-    document.addEventListener('touchend', function(e) {
-      // Remove touch-active class after a delay
-      document.querySelectorAll('.card.touch-active').forEach(function(card) {
-        setTimeout(function() {
-          card.classList.remove('touch-active');
-        }, 100);
-      });
-    }, { passive: true });
-  }
+  // Reset on mouse interaction
+  document.addEventListener('mousedown', function() {
+    lastInteractionWasTouch = false;
+  }, { passive: true });
+
+  // Block context menu on cards when triggered by touch
+  document.addEventListener('contextmenu', function(e) {
+    if (e.target.closest('.card') && lastInteractionWasTouch) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  }, { capture: true, passive: false });
 })();
 
 // ========================================
