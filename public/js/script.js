@@ -1,41 +1,73 @@
 ﻿// ========================================
-// Global Context Menu Blocker for Touch Devices
+// Global Touch Menu Blocker for Cards
 // ========================================
 (function() {
-  // Track if last interaction was touch
-  let lastInteractionWasTouch = false;
+  // Track touch state
+  let activeTouchCard = null;
+  let touchStartTime = 0;
 
-  // Detect touch interactions
+  // On touch start, prepare to block native menus
   document.addEventListener('touchstart', function(e) {
-    lastInteractionWasTouch = true;
-    if (e.target.closest('.card')) {
-      e.target.closest('.card').classList.add('touch-active');
+    const card = e.target.closest('.card');
+    if (card) {
+      activeTouchCard = card;
+      touchStartTime = Date.now();
+
+      // Add class immediately to trigger CSS that blocks native behavior
+      card.classList.add('touch-holding');
+
+      // Prevent default to stop native long-press menu (share sheet)
+      // But only after a short delay so taps still work
+      card._touchTimer = setTimeout(function() {
+        if (activeTouchCard === card) {
+          // Force prevent any selection/callout by temporarily making unselectable
+          card.style.webkitUserSelect = 'none';
+          card.style.userSelect = 'none';
+        }
+      }, 100);
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchmove', function(e) {
+    // If moved significantly, cancel the long press detection
+    if (activeTouchCard && activeTouchCard._touchTimer) {
+      clearTimeout(activeTouchCard._touchTimer);
     }
   }, { passive: true });
 
   document.addEventListener('touchend', function(e) {
-    // Remove touch-active class after a delay
-    document.querySelectorAll('.card.touch-active').forEach(function(card) {
-      setTimeout(function() {
-        card.classList.remove('touch-active');
-      }, 100);
-    });
-    // Reset touch flag after delay
-    setTimeout(function() {
-      lastInteractionWasTouch = false;
-    }, 500);
+    if (activeTouchCard) {
+      if (activeTouchCard._touchTimer) {
+        clearTimeout(activeTouchCard._touchTimer);
+      }
+      activeTouchCard.classList.remove('touch-holding');
+      activeTouchCard = null;
+    }
   }, { passive: true });
 
-  // Reset on mouse interaction
-  document.addEventListener('mousedown', function() {
-    lastInteractionWasTouch = false;
+  document.addEventListener('touchcancel', function(e) {
+    if (activeTouchCard) {
+      if (activeTouchCard._touchTimer) {
+        clearTimeout(activeTouchCard._touchTimer);
+      }
+      activeTouchCard.classList.remove('touch-holding');
+      activeTouchCard = null;
+    }
   }, { passive: true });
 
-  // Block context menu on cards when triggered by touch
+  // Block context menu on cards
   document.addEventListener('contextmenu', function(e) {
-    if (e.target.closest('.card') && lastInteractionWasTouch) {
+    if (e.target.closest('.card')) {
       e.preventDefault();
       e.stopPropagation();
+      return false;
+    }
+  }, { capture: true, passive: false });
+
+  // Also block the 'selectstart' event which can trigger share menus
+  document.addEventListener('selectstart', function(e) {
+    if (e.target.closest('.card')) {
+      e.preventDefault();
       return false;
     }
   }, { capture: true, passive: false });

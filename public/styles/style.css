@@ -2161,6 +2161,14 @@ main {
   user-select: none !important;
 }
 
+/* When touch is being held - block ALL native behaviors */
+.card.touch-holding {
+  touch-action: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
 /* When dragging, prevent ALL native touch behaviors */
 .card.touch-dragging {
   touch-action: none !important;
